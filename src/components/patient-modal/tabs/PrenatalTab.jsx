@@ -1,0 +1,92 @@
+import { Paper, Box, Stack, Group, Grid, Input, NumberInput, TextInput, Table, Button, ActionIcon, Text } from '@mantine/core';
+import { ArrowRight, Trash, Pencil } from 'lucide-react';
+import { formatDate } from '../../../lib/formatters';
+
+const isEditing = (editingVisitIndex) => editingVisitIndex != null;
+
+export default function PrenatalTab({ formData, setFormData, newVisit, setNewVisit, handleVisitDateChange, handleBMIChange, addVisitToList, removeVisit, editingVisitIndex, startEditVisit, cancelEditVisit, nextTab }) {
+  const editing = isEditing(editingVisitIndex);
+  return (
+    <>
+      <style>{`
+        @keyframes prenatal-edit-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
+          50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+        }
+      `}</style>
+      <Paper
+        withBorder
+        radius="md"
+        overflow="hidden"
+        mb="md"
+        style={{
+          borderLeft: editing ? '4px solid var(--mantine-color-green-6)' : undefined,
+          backgroundColor: editing ? 'var(--mantine-color-green-0)' : undefined,
+          animation: editing ? 'prenatal-edit-pulse 1.2s ease-out 2' : undefined,
+        }}
+      >
+        <Box
+          bg={editing ? 'green.1' : 'blue.1'}
+          p="xs"
+          style={{ borderBottom: '1px solid #dee2e6' }}
+        >
+          <Text size="sm" fw={700} c={editing ? 'green.8' : 'blue.9'} align="center">
+            {editing ? `Editing visit ${editingVisitIndex + 1} of ${formData.prenatal_visits.length} — change values above, then click Update Visit` : 'Prenatal Visit'}
+          </Text>
+        </Box>
+        <Stack p="sm">
+          <Group grow>
+            <Input.Wrapper label="Visit Date" withAsterisk> <Input type="date" value={newVisit.date || ''} onChange={handleVisitDateChange} /> </Input.Wrapper>
+            <TextInput label="AOG" readOnly value={newVisit.aog} placeholder="Auto" />
+            <TextInput label="Trimester" readOnly value={newVisit.trimester} placeholder="Auto" />
+          </Group>
+          {newVisit.trimester === '1st Trimester' && (
+            <Grid>
+              <Grid.Col span={3}> <NumberInput label="Ht (cm)" value={newVisit.height} onChange={(val) => handleBMIChange('height', val)} /> </Grid.Col>
+              <Grid.Col span={3}> <NumberInput label="Wt (kg)" value={newVisit.weight} onChange={(val) => handleBMIChange('weight', val)} /> </Grid.Col>
+              <Grid.Col span={3}> <TextInput label="BMI" readOnly value={newVisit.bmi} /> </Grid.Col>
+              <Grid.Col span={3}> <TextInput label="Category" readOnly value={newVisit.bmi_category} /> </Grid.Col>
+            </Grid>
+          )}
+          <Group gap="xs">
+            <Button flex={1} variant="outline" color="teal" onClick={addVisitToList}>{editingVisitIndex != null ? `Update Visit (${editingVisitIndex + 1} of ${formData.prenatal_visits.length})` : '+ Add Visit'}</Button>
+            {editingVisitIndex != null && <Button variant="subtle" color="gray" onClick={cancelEditVisit}>Cancel</Button>}
+          </Group>
+        </Stack>
+      </Paper>
+      <Paper withBorder radius="md" overflow="hidden">
+        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+          <Text size="sm" fw={700} c="blue.9" align="center">Visit History ({formData.prenatal_visits.length})</Text>
+        </Box>
+        <Box p="sm">
+          <Box style={{ overflowX: 'auto' }}>
+            <Table striped withTableBorder>
+              <Table.Thead><Table.Tr><Table.Th>Date</Table.Th><Table.Th>AOG</Table.Th><Table.Th>Trimester</Table.Th><Table.Th>BMI</Table.Th><Table.Th>Action</Table.Th></Table.Tr></Table.Thead>
+              <Table.Tbody>
+                {formData.prenatal_visits.map((v, i) => (
+                  <Table.Tr key={i} bg={i === editingVisitIndex ? 'green.0' : undefined} style={i === editingVisitIndex ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
+                    <Table.Td>{formatDate(v.date)}</Table.Td>
+                    <Table.Td>{v.aog}</Table.Td>
+                    <Table.Td>{v.trimester || '—'}</Table.Td>
+                    <Table.Td>{v.trimester === '1st Trimester' ? (v.bmi ?? '—') : '—'}</Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <ActionIcon color="blue" size="sm" variant="light" onClick={() => startEditVisit(i)} title="Edit"><Pencil size={14} /></ActionIcon>
+                        <ActionIcon color="red" size="sm" onClick={() => removeVisit(i)} title="Delete"><Trash size={14} /></ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Box>
+          <Box mt="sm" p="xs" style={{ borderTop: '1px solid #dee2e6' }}>
+            <Text size="xs" fw={600} c="dimmed" mb={4}>Completed?</Text>
+            <Text size="sm" fw={500} c={formData.prenatal_visits.length >= 8 ? 'green' : 'dimmed'}>{formData.prenatal_visits.length >= 8 ? 'Yes' : 'No'}</Text>
+          </Box>
+        </Box>
+      </Paper>
+      <Group justify="flex-end" mt="md"><Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('immunization')}>Next Section</Button></Group>
+    </>
+  );
+}

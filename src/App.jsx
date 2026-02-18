@@ -1,0 +1,964 @@
+import { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient';
+import Login from './Login';
+import SetPassword from './components/auth/SetPassword';
+import TermsAcceptanceModal from './components/legal/TermsAcceptanceModal';
+import { hasUserAcceptedTerms, setUserAcceptedTerms } from './lib/termsContent';
+import { getAgeGroup, calculateEDC, calculateAOGData, isPatientDue, parseOthers, getLatestPrenatalVisit, getRawWeeksAOG } from './lib/patientHelpers';
+import { formatDate } from './lib/formatters';
+import { getInitialFormState } from './lib/initialFormState';
+import DashboardView from './components/dashboard/DashboardView';
+import RecordsView from './components/records/RecordsView';
+import ReportsView from './components/reports/ReportsView';
+import HelpView from './components/help/HelpView';
+import AboutView from './components/help/AboutView';
+import StatisticsView from './components/statistics/StatisticsView';
+import AppShellLayout from './components/layout/AppShellLayout';
+import PatientModal from './components/patient-modal/PatientModal';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { Box, Loader, Text } from '@mantine/core';
+
+function getHashType() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  return params.get('type');
+}
+
+function App() {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setSession(session); setLoading(false); });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const type = getHashType();
+    if (type === 'invite' || type === 'recovery') setShowSetPassword(true);
+  }, [session]);
+
+  const clearSession = () => setSession(null);
+
+  const handleSetPasswordSuccess = () => {
+    window.history.replaceState(null, '', window.location.pathname || '/');
+    setShowSetPassword(false);
+  };
+
+  if (loading) {
+    return (
+      <Box
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          gap: 24,
+          background: '#f5f5e8',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Animated background elements */}
+        <Box
+          style={{
+            position: 'absolute',
+            top: '-30%',
+            right: '-20%',
+            width: '500px',
+            height: '500px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(34, 177, 76, 0.1) 0%, rgba(34, 177, 76, 0.05) 100%)',
+            filter: 'blur(60px)',
+            animation: 'pulse 3s ease-in-out infinite',
+          }}
+        />
+        <Box
+          style={{
+            position: 'absolute',
+            bottom: '-20%',
+            left: '-15%',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(34, 177, 76, 0.08) 0%, rgba(34, 177, 76, 0.03) 100%)',
+            filter: 'blur(50px)',
+            animation: 'pulse 3s ease-in-out infinite 1.5s',
+          }}
+        />
+        <img
+          src="/konek-logo.png"
+          alt="KONEK"
+          style={{
+            height: 72,
+            width: 'auto',
+            position: 'relative',
+            zIndex: 1,
+            animation: 'fadeIn 0.6s ease-out',
+          }}
+        />
+        <Loader
+          color="teal"
+          type="dots"
+          size="lg"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+          }}
+        />
+        <Text
+          size="sm"
+          c="dimmed"
+          fw={600}
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            letterSpacing: '0.02em',
+            animation: 'fadeIn 0.8s ease-out',
+          }}
+        >
+          Loading KOmunidad NEtwork for Kalusugan…
+        </Text>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+          }
+        `}</style>
+      </Box>
+    );
+  }
+  if (!session) return <Login />;
+
+  if (showSetPassword) return <SetPassword onSuccess={handleSetPasswordSuccess} />;
+
+  const mustAcceptTerms = !hasUserAcceptedTerms(session.user?.id) && !termsAccepted;
+  if (mustAcceptTerms) {
+    return (
+      <Box
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f5f5e8',
+          padding: 24,
+        }}
+      >
+        <TermsAcceptanceModal
+          opened={true}
+          onAccept={() => {
+            setUserAcceptedTerms(session.user.id);
+            setTermsAccepted(true);
+          }}
+        />
+      </Box>
+    );
+  }
+
+  return <MainApp session={session} onLogout={clearSession} />;
+}
+
+function MainApp({ session, onLogout }) {
+  const isAdmin = session.user.email === 'admin@konek.ph';
+  const [activePage, setActivePage] = useState('dashboard');
+  const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
+  const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const [patients, setPatients] = useState([]);
+  const [search, setSearch] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const [opened, { open, close }] = useDisclosure(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [activeTab, setActiveTab] = useState('general');
+  const [formErrors, setFormErrors] = useState({});
+
+  const initialFormState = getInitialFormState();
+  const [formData, setFormData] = useState(initialFormState);
+  const [newVisit, setNewVisit] = useState({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+  const [newSupp, setNewSupp] = useState({ type: 'IFA', date: '', count: '' });
+  const [newLab, setNewLab] = useState({ type: 'CBC', date: '', result: '' });
+  const [newPostpartumLog, setNewPostpartumLog] = useState({ date: '', count: '', remarks: '' });
+  const [editingVisitIndex, setEditingVisitIndex] = useState(null);
+  const [editingSupp, setEditingSupp] = useState(null); // { type: 'IFA'|'MMS', index }
+  const [editingLabIndex, setEditingLabIndex] = useState(null);
+  const [editingPostpartumIndex, setEditingPostpartumIndex] = useState(null);
+  const [newPncContact, setNewPncContact] = useState({ date: '' });
+  const [editingPncContactIndex, setEditingPncContactIndex] = useState(null);
+
+  useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
+  useEffect(() => { fetchPatients(); }, []);
+
+  async function fetchPatients() {
+    let query = supabase.from('maternal_records').select('*').order('created_at', { ascending: false });
+    if (!isAdmin) query = query.eq('created_by', session.user.id);
+    const { data, error } = await query;
+    if (!error) setPatients(data || []);
+  }
+
+  async function handleDelete(patient) {
+    if (!confirm('Delete?')) return;
+
+    let query = supabase.from('maternal_records').delete().eq('id', patient.id);
+    if (!isAdmin) {
+      query = query.eq('created_by', session.user.id);
+    }
+
+    const { error } = await query;
+    if (error) {
+      notifications.show({ title: 'Error', message: error.message, color: 'red' });
+      return;
+    }
+
+    fetchPatients();
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    onLogout();
+  };
+
+  const handleNavClick = (page) => {
+    setActivePage(page);
+    if (isMobile && mobileOpened) toggleMobile();
+  };
+
+  const handleFilterSelect = (status) => {
+    setFilterStatus(status);
+    setActivePage('records');
+  };
+
+  const handleTdChange = (field, value) => {
+    if (!value) { setFormData({ ...formData, [field]: value }); return; }
+    const sequence = ['td1', 'td2', 'td3', 'td4', 'td5'];
+    const currentIndex = sequence.indexOf(field);
+    for (let i = 0; i < currentIndex; i++) {
+      const prevField = sequence[i];
+      const prevDateString = formData[prevField];
+      if (prevDateString && prevDateString >= value) {
+        notifications.show({ title: 'Invalid date', message: `${field.toUpperCase()} cannot be earlier than or same as ${prevField.toUpperCase()} (${formatDate(prevDateString)}). You cannot add a date that is the same as or before the previous one.`, color: 'red' });
+        return;
+      }
+    }
+    for (let i = currentIndex + 1; i < sequence.length; i++) {
+      const nextField = sequence[i];
+      const nextDateString = formData[nextField];
+      if (nextDateString && nextDateString <= value) {
+        notifications.show({ title: 'Invalid date', message: `${field.toUpperCase()} cannot be later than or same as ${nextField.toUpperCase()} (${formatDate(nextDateString)}). You cannot add a date that is the same as or before the previous one.`, color: 'red' });
+        return;
+      }
+    }
+    setFormData({ ...formData, [field]: value });
+  };
+
+  const getImmunizationStats = () => {
+    if (formData.td_completed_previously) return { count: 'Completed (Prev)', fimStatus: 'Yes' };
+    if (formData.td5) return { count: 5, fimStatus: 'Yes' };
+    if (formData.td4) return { count: 4, fimStatus: 'No' };
+    if (formData.td3) return { count: 3, fimStatus: 'No' };
+    if (formData.td2) return { count: 2, fimStatus: 'No' };
+    if (formData.td1) return { count: 1, fimStatus: 'No' };
+    return { count: 0, fimStatus: 'No' };
+  };
+
+  const handleBirthWeightChange = (val, index = 0) => {
+    let category = '';
+    if (val !== '' && val !== undefined && val !== null) { category = val >= 2500 ? 'Normal' : 'Low'; }
+
+    setFormData((prev) => {
+      // Determine how many babies should be represented based on pregnancy type
+      const type = prev.pregnancy_type;
+      const multipleCount = Number(prev.pregnancy_multiple_count) || 0;
+      let desiredCount = 1;
+      if (type === 'Twins') desiredCount = 2;
+      else if (type === 'Multiple' && multipleCount > 0) desiredCount = Math.min(multipleCount, 12);
+
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+      while (existing.length < desiredCount) existing.push({ weight: '', category: '', sex: '' });
+
+      const updated = [...existing];
+      const current = updated[index] || { weight: '', category: '', sex: '' };
+      updated[index] = { ...current, weight: val, category };
+
+      const next = {
+        ...prev,
+        baby_details: updated,
+      };
+
+      // Keep legacy single-baby fields in sync with Baby 1 for reporting / backward compatibility
+      if (index === 0) {
+        next.birth_weight = val;
+        next.birth_weight_category = category;
+      }
+
+      return next;
+    });
+  };
+
+  const handleBabySexChange = (val, index = 0) => {
+    setFormData((prev) => {
+      const type = prev.pregnancy_type;
+      const multipleCount = Number(prev.pregnancy_multiple_count) || 0;
+      let desiredCount = 1;
+      if (type === 'Twins') desiredCount = 2;
+      else if (type === 'Multiple' && multipleCount > 0) desiredCount = Math.min(multipleCount, 12);
+
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+      while (existing.length < desiredCount) existing.push({ weight: '', category: '', sex: '' });
+
+      const updated = [...existing];
+      const current = updated[index] || { weight: '', category: '', sex: '' };
+      updated[index] = { ...current, sex: val };
+
+      const next = {
+        ...prev,
+        baby_details: updated,
+      };
+
+      if (index === 0) {
+        next.birth_sex = val;
+      }
+
+      return next;
+    });
+  };
+
+  const handleLmpChange = (e) => {
+    const newLmp = e.target.value;
+    const newEdc = calculateEDC(newLmp);
+    const { aog, trimester } = calculateAOGData(newLmp, formData.visit_date);
+    setFormData({ ...formData, lmp: newLmp, edc: newEdc, aog, trimester });
+    // Recalculate new visit AOG/trimester when LMP changes (if visit date already set)
+    setNewVisit((prev) => {
+      if (!prev.date) return prev;
+      const { aog: visitAog, trimester: visitTrim } = calculateAOGData(newLmp, prev.date);
+      return { ...prev, aog: visitAog, trimester: visitTrim };
+    });
+  };
+
+  /** When editing a visit, get the date bounds from its position in chronological order (previous and next visit by date). */
+  const getVisitDateBoundsForEditing = (visits, editingIndex) => {
+    const withIndex = (visits || []).map((v, i) => ({ visit: v, index: i }));
+    const sorted = [...withIndex].sort((a, b) => (a.visit?.date || '').localeCompare(b.visit?.date || ''));
+    const p = sorted.findIndex(({ index }) => index === editingIndex);
+    if (p === -1) return { previousDate: null, nextDate: null };
+    const previousDate = p > 0 ? sorted[p - 1].visit?.date || null : null;
+    const nextDate = p < sorted.length - 1 ? sorted[p + 1].visit?.date || null : null;
+    return { previousDate, nextDate };
+  };
+
+  const handleVisitDateChange = (e) => {
+    const date = e.target.value;
+    const { aog, trimester } = calculateAOGData(formData.lmp, date);
+    setNewVisit({ ...newVisit, date, aog, trimester });
+  };
+
+  const handleBMIChange = (field, value) => {
+    const updatedVisit = { ...newVisit, [field]: value };
+    let bmiValue = '', category = '';
+    if (updatedVisit.weight && updatedVisit.height) {
+      const h = updatedVisit.height / 100;
+      const w = updatedVisit.weight;
+      const rawBmi = w / (h * h);
+      const res = Number(rawBmi.toFixed(1));
+      bmiValue = res.toFixed(1);
+      if (res < 18.5) category = 'LOW';
+      else if (res < 25) category = 'NORMAL';
+      else category = 'HIGH';
+    }
+    setNewVisit({ ...updatedVisit, bmi: bmiValue, bmi_category: category });
+  };
+
+  const addVisitToList = () => {
+    if (!newVisit.date) return notifications.show({ title: 'Required', message: 'Please enter visit date.', color: 'red' });
+    const rawWeeks = getRawWeeksAOG(formData.lmp, newVisit.date);
+    if (rawWeeks !== null && rawWeeks > 43) {
+      notifications.show({ title: 'Invalid visit date', message: 'Visit date cannot be beyond 43 weeks AOG. Please choose another date.', color: 'red' });
+      setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+      return;
+    }
+    if (newVisit.trimester === '1st Trimester' && (newVisit.weight === '' || newVisit.weight == null)) return notifications.show({ title: 'Required', message: 'Weight is required for 1st trimester visits.', color: 'red' });
+    const otherVisits = editingVisitIndex != null ? formData.prenatal_visits.filter((_, idx) => idx !== editingVisitIndex) : formData.prenatal_visits;
+    if (editingVisitIndex != null) {
+      const { previousDate, nextDate } = getVisitDateBoundsForEditing(formData.prenatal_visits, editingVisitIndex);
+      if (previousDate != null && newVisit.date <= previousDate) {
+        notifications.show({ title: 'Invalid date', message: `Visit date must be after the previous visit (${formatDate(previousDate)}).`, color: 'red' });
+        return;
+      }
+      if (nextDate != null && newVisit.date >= nextDate) {
+        notifications.show({ title: 'Invalid date', message: `Visit date must be before the next visit (${formatDate(nextDate)}).`, color: 'red' });
+        return;
+      }
+    } else {
+      const latest = getLatestPrenatalVisit(otherVisits);
+      if (latest?.date && newVisit.date <= latest.date) {
+        notifications.show({ title: 'Invalid date', message: `Visit date must be after the latest visit (${formatDate(latest.date)}). You cannot add a date that is the same as or before the previous one.`, color: 'red' });
+        return;
+      }
+    }
+    if (editingVisitIndex != null) {
+      const next = [...formData.prenatal_visits];
+      next[editingVisitIndex] = newVisit;
+      setFormData({ ...formData, prenatal_visits: next });
+      setEditingVisitIndex(null);
+    } else {
+      setFormData({ ...formData, prenatal_visits: [...formData.prenatal_visits, newVisit] });
+    }
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+  };
+  const removeVisit = (i) => {
+    setFormData({ ...formData, prenatal_visits: formData.prenatal_visits.filter((_, idx) => idx !== i) });
+    if (editingVisitIndex === i) { setEditingVisitIndex(null); setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' }); }
+  };
+  const startEditVisit = (i) => {
+    const v = formData.prenatal_visits[i] || {};
+    setNewVisit({ date: v.date || '', aog: v.aog || '', trimester: v.trimester || '', weight: v.weight || '', height: v.height || '', bmi: v.bmi || '', bmi_category: v.bmi_category || '', remarks: v.remarks || '' });
+    setEditingVisitIndex(i);
+  };
+  const cancelEditVisit = () => {
+    setEditingVisitIndex(null);
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+  };
+
+  /** When editing a log (supplement or postpartum), get date bounds from its position in chronological order. */
+  const getLogDateBoundsForEditing = (items, editingIndex) => {
+    const list = items || [];
+    const withIndex = list.map((item, i) => ({ item, index: i }));
+    const sorted = [...withIndex].sort((a, b) => String(a.item?.date || '').localeCompare(String(b.item?.date || '')));
+    const p = sorted.findIndex(({ index }) => index === editingIndex);
+    if (p === -1) return { previousDate: null, nextDate: null };
+    const previousDate = p > 0 ? sorted[p - 1].item?.date || null : null;
+    const nextDate = p < sorted.length - 1 ? sorted[p + 1].item?.date || null : null;
+    return { previousDate, nextDate };
+  };
+
+  const addSupplement = () => {
+    if (!newSupp.date || !newSupp.count) return notifications.show({ title: 'Required', message: 'Please enter date and count.', color: 'red' });
+    const list = newSupp.type === 'IFA' ? formData.supplements_ifa : newSupp.type === 'Calcium' ? formData.supplements_calcium : formData.supplements_mms;
+    const label = newSupp.type === 'IFA' ? 'IFA' : newSupp.type === 'Calcium' ? 'Calcium' : 'MMS';
+    if (editingSupp != null && editingSupp.type === newSupp.type) {
+      const { previousDate, nextDate } = getLogDateBoundsForEditing(list, editingSupp.index);
+      if (previousDate != null && newSupp.date <= previousDate) {
+        notifications.show({ title: 'Invalid date', message: `${label} log date must be after the previous log (${formatDate(previousDate)}).`, color: 'red' });
+        return;
+      }
+      if (nextDate != null && newSupp.date >= nextDate) {
+        notifications.show({ title: 'Invalid date', message: `${label} log date must be before the next log (${formatDate(nextDate)}).`, color: 'red' });
+        return;
+      }
+    } else {
+      const latestDate = list.length ? list.reduce((max, item) => (item.date > max ? item.date : max), list[0].date) : null;
+      if (latestDate && newSupp.date <= latestDate) {
+        notifications.show({ title: 'Invalid date', message: `${label} log date must be after the latest log (${formatDate(latestDate)}). You cannot add a date that is the same as or before the previous one.`, color: 'red' });
+        return;
+      }
+    }
+    const entry = { date: newSupp.date, count: newSupp.count };
+    if (editingSupp != null && editingSupp.type === newSupp.type) {
+      const arr = [...list];
+      arr[editingSupp.index] = entry;
+      if (newSupp.type === 'IFA') setFormData({ ...formData, supplements_ifa: arr });
+      else if (newSupp.type === 'Calcium') setFormData({ ...formData, supplements_calcium: arr });
+      else setFormData({ ...formData, supplements_mms: arr });
+      setEditingSupp(null);
+    } else {
+      if (newSupp.type === 'IFA') setFormData({ ...formData, supplements_ifa: [...formData.supplements_ifa, entry] });
+      else if (newSupp.type === 'Calcium') setFormData({ ...formData, supplements_calcium: [...formData.supplements_calcium, entry] });
+      else setFormData({ ...formData, supplements_mms: [...formData.supplements_mms, entry] });
+    }
+    setNewSupp({ ...newSupp, date: '', count: '' });
+  };
+  const removeSupplement = (type, index) => {
+    if (type === 'IFA') setFormData({ ...formData, supplements_ifa: formData.supplements_ifa.filter((_, i) => i !== index) });
+    else if (type === 'Calcium') setFormData({ ...formData, supplements_calcium: formData.supplements_calcium.filter((_, i) => i !== index) });
+    else setFormData({ ...formData, supplements_mms: formData.supplements_mms.filter((_, i) => i !== index) });
+    if (editingSupp?.type === type && editingSupp?.index === index) { setEditingSupp(null); setNewSupp({ ...newSupp, date: '', count: '' }); }
+  };
+  const startEditSupplement = (type, index) => {
+    const list = type === 'IFA' ? formData.supplements_ifa : type === 'MMS' ? formData.supplements_mms : formData.supplements_calcium;
+    const s = list[index] || {};
+    setNewSupp({ type, date: s.date || '', count: s.count ?? '' });
+    setEditingSupp({ type, index });
+  };
+  const cancelEditSupplement = () => {
+    setEditingSupp(null);
+    setNewSupp({ type: newSupp.type || 'IFA', date: '', count: '' });
+  };
+
+  const addLabLog = () => {
+    if (!newLab.date) return notifications.show({ title: 'Required', message: 'Date is required.', color: 'red' });
+    if (!newLab.result) return notifications.show({ title: 'Required', message: 'Result is required.', color: 'red' });
+    const logs = formData.lab_logs || [];
+    if (editingLabIndex != null) {
+      const next = [...logs];
+      next[editingLabIndex] = newLab;
+      setFormData({ ...formData, lab_logs: next });
+      setEditingLabIndex(null);
+    } else {
+      setFormData({ ...formData, lab_logs: [...logs, newLab] });
+    }
+    setNewLab({ type: newLab.type, date: '', result: '' });
+  };
+  const removeLabLog = (index) => {
+    setFormData({ ...formData, lab_logs: formData.lab_logs.filter((_, i) => i !== index) });
+    if (editingLabIndex === index) { setEditingLabIndex(null); setNewLab({ type: newLab.type, date: '', result: '' }); }
+  };
+  const startEditLabLog = (index) => {
+    const log = (formData.lab_logs || [])[index] || {};
+    setNewLab({ type: log.type || 'CBC', date: log.date || '', result: log.result || '' });
+    setEditingLabIndex(index);
+  };
+  const cancelEditLabLog = () => {
+    setEditingLabIndex(null);
+    setNewLab({ type: newLab.type || 'CBC', date: '', result: '' });
+  };
+
+  const getIfaCompletionDate = (logList) => {
+    const sorted = [...(logList || [])].sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
+    let running = 0;
+    for (const item of sorted) {
+      running += Number(item?.count) || 0;
+      if (running >= 90) return item?.date || '';
+    }
+    return '';
+  };
+
+  const addPostpartumLog = () => {
+    if (!newPostpartumLog.date || !newPostpartumLog.count) return notifications.show({ title: 'Required', message: 'Date and count are required.', color: 'red' });
+    const logs = formData.postpartum_logs || [];
+    if (editingPostpartumIndex != null) {
+      const { previousDate, nextDate } = getLogDateBoundsForEditing(logs, editingPostpartumIndex);
+      if (previousDate != null && newPostpartumLog.date <= previousDate) {
+        notifications.show({ title: 'Invalid date', message: `Postpartum log date must be after the previous log (${formatDate(previousDate)}).`, color: 'red' });
+        return;
+      }
+      if (nextDate != null && newPostpartumLog.date >= nextDate) {
+        notifications.show({ title: 'Invalid date', message: `Postpartum log date must be before the next log (${formatDate(nextDate)}).`, color: 'red' });
+        return;
+      }
+    } else {
+      const latestDate = logs.length ? logs.reduce((max, item) => (item.date > max ? item.date : max), logs[0].date) : null;
+      if (latestDate && newPostpartumLog.date <= latestDate) {
+        notifications.show({ title: 'Invalid date', message: `Postpartum log date must be after the latest log (${formatDate(latestDate)}). You cannot add a date that is the same as or before the previous one.`, color: 'red' });
+        return;
+      }
+    }
+
+    let updatedLogs;
+    if (editingPostpartumIndex != null) {
+      updatedLogs = [...logs];
+      updatedLogs[editingPostpartumIndex] = newPostpartumLog;
+      setEditingPostpartumIndex(null);
+    } else {
+      updatedLogs = [...logs, newPostpartumLog];
+    }
+    const completionDate = getIfaCompletionDate(updatedLogs);
+    setFormData({
+      ...formData,
+      postpartum_logs: updatedLogs,
+      postpartum_ifa_completed_date: completionDate || null,
+    });
+    setNewPostpartumLog({ date: '', count: '', remarks: '' });
+  };
+  const removePostpartumLog = (index) => {
+    const updatedLogs = (formData.postpartum_logs || []).filter((_, i) => i !== index);
+    const completionDate = getIfaCompletionDate(updatedLogs);
+    setFormData({
+      ...formData,
+      postpartum_logs: updatedLogs,
+      postpartum_ifa_completed_date: completionDate || null,
+    });
+    if (editingPostpartumIndex === index) { setEditingPostpartumIndex(null); setNewPostpartumLog({ date: '', count: '', remarks: '' }); }
+  };
+  const startEditPostpartumLog = (index) => {
+    const log = (formData.postpartum_logs || [])[index] || {};
+    setNewPostpartumLog({ date: log.date || '', count: log.count ?? '', remarks: log.remarks || '' });
+    setEditingPostpartumIndex(index);
+  };
+  const cancelEditPostpartumLog = () => {
+    setEditingPostpartumIndex(null);
+    setNewPostpartumLog({ date: '', count: '', remarks: '' });
+  };
+
+  /** When editing a PNC contact, get date bounds from its position in chronological order. */
+  const getPncContactDateBoundsForEditing = (contacts, editingIndex) => {
+    const list = contacts || [];
+    const withIndex = list.map((c, i) => ({ contact: c, index: i }));
+    const sorted = [...withIndex].sort((a, b) => String(a.contact?.date || '').localeCompare(String(b.contact?.date || '')));
+    const p = sorted.findIndex(({ index }) => index === editingIndex);
+    if (p === -1) return { previousDate: null, nextDate: null };
+    const previousDate = p > 0 ? sorted[p - 1].contact?.date || null : null;
+    const nextDate = p < sorted.length - 1 ? sorted[p + 1].contact?.date || null : null;
+    return { previousDate, nextDate };
+  };
+
+  const handlePncContactDateChange = (e) => {
+    setNewPncContact({ ...newPncContact, date: e.target.value });
+  };
+
+  const addPncContact = () => {
+    if (!newPncContact.date) return notifications.show({ title: 'Required', message: 'Please enter contact date.', color: 'red' });
+    const list = formData.pnc_contacts || [];
+    if (editingPncContactIndex != null) {
+      const { previousDate, nextDate } = getPncContactDateBoundsForEditing(list, editingPncContactIndex);
+      if (previousDate != null && newPncContact.date <= previousDate) {
+        notifications.show({ title: 'Invalid date', message: `Contact date must be after the previous contact (${formatDate(previousDate)}).`, color: 'red' });
+        return;
+      }
+      if (nextDate != null && newPncContact.date >= nextDate) {
+        notifications.show({ title: 'Invalid date', message: `Contact date must be before the next contact (${formatDate(nextDate)}).`, color: 'red' });
+        return;
+      }
+    } else {
+      const latestDate = list.length ? list.reduce((max, c) => (c.date > max ? c.date : max), list[0].date) : null;
+      if (latestDate && newPncContact.date <= latestDate) {
+        notifications.show({ title: 'Invalid date', message: `Contact date must be after the latest contact (${formatDate(latestDate)}).`, color: 'red' });
+        return;
+      }
+    }
+    const contact = { date: newPncContact.date };
+    if (editingPncContactIndex != null) {
+      const next = [...(formData.pnc_contacts || [])];
+      next[editingPncContactIndex] = contact;
+      setFormData({ ...formData, pnc_contacts: next });
+      setEditingPncContactIndex(null);
+    } else {
+      setFormData({ ...formData, pnc_contacts: [...(formData.pnc_contacts || []), contact] });
+    }
+    setNewPncContact({ date: '' });
+  };
+  const removePncContact = (i) => {
+    setFormData({ ...formData, pnc_contacts: (formData.pnc_contacts || []).filter((_, idx) => idx !== i) });
+    if (editingPncContactIndex === i) { setEditingPncContactIndex(null); setNewPncContact({ date: '' }); }
+  };
+  const startEditPncContact = (i) => {
+    const c = (formData.pnc_contacts || [])[i] || {};
+    setNewPncContact({ date: c.date || '' });
+    setEditingPncContactIndex(i);
+  };
+  const cancelEditPncContact = () => {
+    setEditingPncContactIndex(null);
+    setNewPncContact({ date: '' });
+  };
+
+  const handleAddClick = () => {
+    if (opened && isEditing) {
+      if (!confirm('You are editing a record. Start a new record instead? Your current changes will be lost.')) return;
+    }
+    setFormData(getInitialFormState());
+    setFormErrors({});
+    setIsEditing(false);
+    setEditId(null);
+    setActiveTab('general');
+    setEditingVisitIndex(null);
+    setEditingSupp(null);
+    setEditingLabIndex(null);
+    setEditingPostpartumIndex(null);
+    setEditingPncContactIndex(null);
+    setNewSupp({ type: 'IFA', date: '', count: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewLab({ type: 'CBC', date: '', result: '' });
+    setNewPostpartumLog({ date: '', count: '', remarks: '' });
+    setNewPncContact({ date: '' });
+    open();
+  };
+
+  const handleEditClick = (patient) => {
+    const attendant = parseOthers(patient.delivery_attendant);
+    const cleanData = {};
+    Object.keys(initialFormState).forEach((key) => {
+      if (patient[key] === null || patient[key] === undefined) cleanData[key] = initialFormState[key];
+      else cleanData[key] = patient[key];
+    });
+    cleanData.baby_details = Array.isArray(patient.baby_details) ? patient.baby_details : (cleanData.baby_details || []);
+    cleanData.pnc_contacts = [patient.pnc_date_1, patient.pnc_date_2, patient.pnc_date_3, patient.pnc_date_4]
+      .filter(Boolean)
+      .map((date) => ({ date }));
+    cleanData.is_8anc_completed = (patient.is_8anc_completed === true || patient.is_8anc_completed === 'Yes') ? 'Yes' : 'No';
+    cleanData.td_completed_previously = (patient.td_completed_previously === true || patient.td_completed_previously === 'true' || String(patient.td_completed_previously) === 'true');
+
+    setFormData({
+      ...initialFormState,
+      ...cleanData,
+      manual_risk: patient.is_high_risk,
+      delivery_attendant: attendant.main,
+      delivery_attendant_specify: attendant.specify,
+      prenatal_visits: patient.prenatal_visits || [],
+      supplements_ifa: patient.supplements_ifa || [],
+      supplements_calcium: patient.supplements_calcium || [],
+      supplements_mms: patient.supplements_mms || [],
+      lab_logs: patient.lab_logs || [],
+      postpartum_logs: patient.postpartum_logs || [],
+    });
+    setFormErrors({});
+    setIsEditing(true);
+    setEditId(patient.id);
+    setActiveTab('general');
+    setEditingVisitIndex(null);
+    setEditingSupp(null);
+    setEditingLabIndex(null);
+    setEditingPostpartumIndex(null);
+    setEditingPncContactIndex(null);
+    setNewSupp({ type: 'IFA', date: '', count: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewLab({ type: 'CBC', date: '', result: '' });
+    setNewPostpartumLog({ date: '', count: '', remarks: '' });
+    setNewPncContact({ date: '' });
+    open();
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    let firstErrorTab = null;
+    const isInvalid = (val) => val === '' || val === null || val === undefined;
+    const setError = (field, tab, msg) => {
+      if (!newErrors[field]) { newErrors[field] = msg; if (!firstErrorTab) firstErrorTab = tab; }
+    };
+
+    if (isInvalid(formData.last_name)) setError('last_name', 'general', 'Last name is required');
+    if (isInvalid(formData.first_name)) setError('first_name', 'general', 'First name is required');
+    if (isInvalid(formData.age)) setError('age', 'general', 'Age is required');
+    if (isInvalid(formData.barangay)) setError('barangay', 'general', 'Barangay is required');
+    if (isInvalid(formData.address)) setError('address', 'general', 'Address is required');
+    if (isInvalid(formData.lmp)) setError('lmp', 'general', 'LMP is required');
+    if (isInvalid(formData.gravida)) setError('gravida', 'general', 'Gravida is required');
+    if (isInvalid(formData.parity)) setError('parity', 'general', 'Parity is required');
+    const isAbortedCheck = formData.delivery_outcome === 'AB' || formData.delivery_outcome === 'FD';
+    const hasDelivered = !!(formData.delivery_outcome && String(formData.delivery_outcome).trim());
+    if (hasDelivered && !isAbortedCheck && isInvalid(formData.delivery_mode)) setError('delivery_mode', 'delivery', 'Delivery type is required');
+
+    setFormErrors(newErrors);
+    if (firstErrorTab) {
+      setActiveTab(firstErrorTab);
+      setTimeout(() => {
+        const errorElement = document.querySelector('.mantine-InputWrapper-error');
+        if (errorElement) errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+    return Object.keys(newErrors).length === 0;
+  };
+
+  async function handleSubmit() {
+    if (!validateForm()) return;
+    setSubmitting(true);
+    try {
+      const latest = getLatestPrenatalVisit(formData.prenatal_visits) || {};
+      const calculatedIfaCount = (formData.postpartum_logs || []).reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+      const finalAttendant = formData.delivery_attendant === 'Others' ? `Others: ${formData.delivery_attendant_specify}` : formData.delivery_attendant;
+
+      const pncContactsSorted = [...(formData.pnc_contacts || [])].sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
+      const pncFirstFour = pncContactsSorted.slice(0, 4);
+      const pncAllFour = pncFirstFour.length === 4;
+      const pncDate1 = pncFirstFour[0]?.date || '';
+      const pncDate2 = pncFirstFour[1]?.date || '';
+      const pncDate3 = pncFirstFour[2]?.date || '';
+      const pncDate4 = pncFirstFour[3]?.date || '';
+      const vitADateSet = !!(formData.vit_a_completed_date && String(formData.vit_a_completed_date).trim());
+      const getIfaCompletionDate = (logList) => {
+        const sorted = [...(logList || [])].sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
+        let running = 0;
+        for (const item of sorted) {
+          running += Number(item?.count) || 0;
+          if (running >= 90) return item?.date || null;
+        }
+        return null;
+      };
+      const ifaCompletionDate = getIfaCompletionDate(formData.postpartum_logs);
+
+      const rawPayload = {
+        ...formData,
+        is_high_risk: formData.manual_risk,
+        height: latest.height || null,
+        weight: latest.weight || null,
+        bmi: latest.bmi || null,
+        bmi_category: latest.bmi_category || null,
+        delivery_attendant: finalAttendant,
+        postpartum_ifa_count: calculatedIfaCount,
+        pnc_date_1: pncDate1 || null,
+        pnc_date_2: pncDate2 || null,
+        pnc_date_3: pncDate3 || null,
+        pnc_date_4: pncDate4 || null,
+        is_4pnc_completed: pncAllFour ? 'Yes' : 'No',
+        is_8anc_completed: (formData.prenatal_visits || []).length >= 8,
+        is_postpartum_ifa_completed: calculatedIfaCount >= 90 ? 'Yes' : 'No',
+        postpartum_ifa_completed_date: ifaCompletionDate,
+        is_vit_a_completed: vitADateSet ? 'Yes' : 'No',
+        created_by: session.user.id,
+      };
+
+      // UI-only / helper fields that should not be sent to Supabase
+      delete rawPayload.delivery_attendant_specify;
+      delete rawPayload.delivery_place_specify;
+      delete rawPayload.pnc_contacts;
+      if (isEditing) delete rawPayload.created_by;
+
+      // Persist baby_details for reporting; empty for non–live births
+      const isLiveBirth = ['FT', 'PT'].includes(formData.delivery_outcome);
+      rawPayload.baby_details = isLiveBirth && Array.isArray(formData.baby_details) && formData.baby_details.length > 0
+        ? formData.baby_details
+        : [];
+
+      if (formData.delivery_place === 'Others') {
+        rawPayload.delivery_non_health_facility = formData.delivery_non_health_facility || null;
+        rawPayload.delivery_non_health_place = formData.delivery_non_health_facility === 'Others' ? (formData.delivery_non_health_place || null) : null;
+      } else {
+        rawPayload.delivery_non_health_facility = null;
+        rawPayload.delivery_non_health_place = null;
+      }
+      const publicFacilityPlaces = ['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
+      if (publicFacilityPlaces.includes(formData.delivery_place || '')) {
+        rawPayload.delivery_facility_type = 'Public';
+      }
+
+      const numberFields = ['age', 'gravida', 'parity', 'birth_weight', 'height', 'weight', 'bmi', 'postpartum_ifa_count', 'pregnancy_multiple_count'];
+      const finalPayload = { ...rawPayload };
+      Object.keys(finalPayload).forEach((key) => {
+        if (finalPayload[key] === '') finalPayload[key] = null;
+        if (numberFields.includes(key) && (finalPayload[key] === '' || finalPayload[key] === null)) finalPayload[key] = null;
+      });
+
+      let error;
+      if (isEditing) {
+        finalPayload.updated_at = new Date().toISOString();
+        const { error: updateError } = await supabase.from('maternal_records').update(finalPayload).eq('id', editId);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase.from('maternal_records').insert(finalPayload);
+        error = insertError;
+      }
+
+      if (!error) {
+        close();
+        setFormData(getInitialFormState());
+        setIsEditing(false);
+        setEditId(null);
+        setEditingVisitIndex(null);
+        setEditingSupp(null);
+        setEditingLabIndex(null);
+        setEditingPostpartumIndex(null);
+        setEditingPncContactIndex(null);
+        fetchPatients();
+      } else {
+        notifications.show({ title: 'Error', message: error.message, color: 'red' });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const nextTab = (next) => setActiveTab(next);
+  const totalIFA = formData.supplements_ifa.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+  const totalMMS = formData.supplements_mms.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+  const ifaProgress = Math.min((totalIFA / 180) * 100, 100);
+  const totalPostpartum = (formData.postpartum_logs || []).reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+  const postpartumProgress = Math.min((totalPostpartum / 90) * 100, 100);
+  const isAborted = formData.delivery_outcome === 'AB' || formData.delivery_outcome === 'FD';
+
+  const mainContent =
+    activePage === 'dashboard' ? <DashboardView patients={patients} currentTime={currentTime} handleAddClick={handleAddClick} onFilterSelect={handleFilterSelect} /> :
+      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} /> :
+        activePage === 'reports' ? <ReportsView patients={patients} /> :
+          activePage === 'statistics' ? <StatisticsView isAdmin={isAdmin} userId={session.user.id} onEditRecord={(recordId) => { const patient = patients.find((p) => p.id === recordId); if (patient) handleEditClick(patient); else { fetchPatients().then(() => { const fresh = patients.find((p) => p.id === recordId); if (fresh) handleEditClick(fresh); }); } }} /> :
+            activePage === 'help' ? <HelpView /> :
+              activePage === 'about' ? <AboutView /> : null;
+
+  return (
+    <>
+      <AppShellLayout
+        mobileOpened={mobileOpened}
+        toggleMobile={toggleMobile}
+        desktopOpened={desktopOpened}
+        toggleDesktop={toggleDesktop}
+        activePage={activePage}
+        handleNavClick={handleNavClick}
+        handleAddClick={handleAddClick}
+        handleLogout={handleLogout}
+        isAdmin={isAdmin}
+        showStatisticsTab={true}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        modalOpened={opened}
+      >
+        {mainContent}
+      </AppShellLayout>
+
+      <PatientModal
+        opened={opened}
+        close={close}
+        submitting={submitting}
+        isEditing={isEditing}
+        formData={formData}
+        setFormData={setFormData}
+        formErrors={formErrors}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        newVisit={newVisit}
+        setNewVisit={setNewVisit}
+        newSupp={newSupp}
+        setNewSupp={setNewSupp}
+        newLab={newLab}
+        setNewLab={setNewLab}
+        newPostpartumLog={newPostpartumLog}
+        setNewPostpartumLog={setNewPostpartumLog}
+        handleSubmit={handleSubmit}
+        nextTab={nextTab}
+        getAgeGroup={getAgeGroup}
+        getImmunizationStats={getImmunizationStats}
+        handleTdChange={handleTdChange}
+        handleLmpChange={handleLmpChange}
+        handleVisitDateChange={handleVisitDateChange}
+        handleBMIChange={handleBMIChange}
+        addVisitToList={addVisitToList}
+        removeVisit={removeVisit}
+        editingVisitIndex={editingVisitIndex}
+        startEditVisit={startEditVisit}
+        cancelEditVisit={cancelEditVisit}
+        addSupplement={addSupplement}
+        removeSupplement={removeSupplement}
+        editingSupp={editingSupp}
+        startEditSupplement={startEditSupplement}
+        cancelEditSupplement={cancelEditSupplement}
+        addLabLog={addLabLog}
+        removeLabLog={removeLabLog}
+        editingLabIndex={editingLabIndex}
+        startEditLabLog={startEditLabLog}
+        cancelEditLabLog={cancelEditLabLog}
+        addPostpartumLog={addPostpartumLog}
+        removePostpartumLog={removePostpartumLog}
+        editingPostpartumIndex={editingPostpartumIndex}
+        startEditPostpartumLog={startEditPostpartumLog}
+        cancelEditPostpartumLog={cancelEditPostpartumLog}
+        newPncContact={newPncContact}
+        setNewPncContact={setNewPncContact}
+        handlePncContactDateChange={handlePncContactDateChange}
+        addPncContact={addPncContact}
+        removePncContact={removePncContact}
+        editingPncContactIndex={editingPncContactIndex}
+        startEditPncContact={startEditPncContact}
+        cancelEditPncContact={cancelEditPncContact}
+        handleBirthWeightChange={handleBirthWeightChange}
+        handleBabySexChange={handleBabySexChange}
+        totalIFA={totalIFA}
+        totalMMS={totalMMS}
+        ifaProgress={ifaProgress}
+        totalPostpartum={totalPostpartum}
+        postpartumProgress={postpartumProgress}
+        isAborted={isAborted}
+      />
+    </>
+  );
+}
+
+export default App;

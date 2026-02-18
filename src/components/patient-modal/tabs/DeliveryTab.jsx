@@ -1,0 +1,322 @@
+import { useState, useEffect, useMemo } from 'react';
+import { Paper, Box, Stack, Group, Grid, Input, Select, TextInput, Checkbox, Text, NumberInput, Button } from '@mantine/core';
+import { ArrowRight } from 'lucide-react';
+import { getWeeksAOG } from '../../../lib/patientHelpers';
+
+export default function DeliveryTab({ formData, setFormData, formErrors, handleBirthWeightChange, handleBabySexChange, isAborted, nextTab }) {
+  const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
+
+  const pregnancyType = formData.pregnancy_type || '';
+  const multipleCount = Number(formData.pregnancy_multiple_count) || 0;
+
+  let babyCount = 1;
+  if (pregnancyType === 'Twins') babyCount = 2;
+  else if (pregnancyType === 'Multiple' && multipleCount > 0) babyCount = Math.min(multipleCount, 12);
+
+  useEffect(() => {
+    setSelectedBabyIndex((prev) => Math.min(prev, Math.max(0, babyCount - 1)));
+  }, [babyCount]);
+
+  const baseBabyDetails = Array.isArray(formData.baby_details) ? formData.baby_details : [];
+  const babyDetails = Array.from({ length: babyCount }, (_, index) => {
+    const existing = baseBabyDetails[index];
+    if (existing) return existing;
+    // For Baby 1, fall back to legacy single-baby fields if no structured data yet
+    if (index === 0) {
+      return {
+        weight: formData.birth_weight || '',
+        category: formData.birth_weight_category || '',
+        sex: formData.birth_sex || '',
+      };
+    }
+    return { weight: '', category: '', sex: '' };
+  });
+
+  const effectiveIndex = Math.min(selectedBabyIndex, babyCount - 1);
+  const currentBaby = babyDetails[effectiveIndex] || { weight: '', category: '', sex: '' };
+
+  const handlePregnancyTypeChange = (val) => {
+    setFormData({
+      ...formData,
+      pregnancy_type: val,
+      pregnancy_multiple_count: val === 'Multiple' ? (formData.pregnancy_multiple_count || '') : '',
+    });
+  };
+
+  const publicFacilityPlaces = ['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
+  const isPublicFacilityPlace = publicFacilityPlaces.includes(formData.delivery_place || '');
+
+  // FHSIS: AB < 20w, PT 20–<37w, FT ≥ 37w, FD any
+  const outcomeOptions = useMemo(() => {
+    const weeks = getWeeksAOG(formData.lmp, formData.delivery_date);
+    const base = [
+      { value: 'FT', label: 'FT - Full Term' },
+      { value: 'PT', label: 'PT - Pre-term' },
+      { value: 'FD', label: 'FD - Fetal Death' },
+      { value: 'AB', label: 'AB - Abortion' },
+    ];
+    return base.map((opt) => {
+      if (opt.value === 'FD') return { ...opt, disabled: false };
+      if (opt.value === 'AB') return { ...opt, disabled: weeks !== null && weeks >= 20 };
+      if (opt.value === 'PT') return { ...opt, disabled: weeks === null || weeks < 20 || weeks >= 37 };
+      if (opt.value === 'FT') return { ...opt, disabled: weeks === null || weeks < 37 };
+      return opt;
+    });
+  }, [formData.lmp, formData.delivery_date]);
+
+  return (
+    <>
+      <Grid grow>
+        <Grid.Col span={4}>
+          <Paper withBorder radius="md" overflow="hidden">
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">Pregnancy Outcome</Text>
+            </Box>
+            <Stack p="sm" gap="xs">
+              <Input.Wrapper label="Date Terminated"> <Input type="date" value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /> </Input.Wrapper>
+              <Select
+                label="Outcome"
+                placeholder="--"
+                data={outcomeOptions}
+                value={formData.delivery_outcome || ''}
+                onChange={(val) => {
+                  if (val === 'FD' || val === 'AB') {
+                    setFormData({
+                      ...formData,
+                      delivery_outcome: val,
+                      birth_weight: '',
+                      birth_weight_category: '',
+                      birth_sex: '',
+                      delivery_time: '',
+                      delivery_mode: '',
+                      delivery_attendant: '',
+                      delivery_attendant_specify: '',
+                      delivery_place: '',
+                      delivery_facility_type: '',
+                      delivery_place_specify: '',
+                      delivery_non_health_facility: '',
+                      delivery_non_health_place: '',
+                      delivery_place_capable: '',
+                      pregnancy_type: '',
+                      pregnancy_multiple_count: '',
+                    });
+                  } else {
+                    setFormData({ ...formData, delivery_outcome: val });
+                  }
+                }}
+              />
+              <TextInput label="Remarks" placeholder="..." value={formData.pregnancy_outcome_remarks || ''} onChange={(e) => setFormData({ ...formData, pregnancy_outcome_remarks: e.target.value })} />
+              <Select
+                label="Pregnancy Type"
+                placeholder="Select..."
+                data={['Singleton', 'Twins', 'Multiple']}
+                value={pregnancyType}
+                onChange={handlePregnancyTypeChange}
+              />
+              {pregnancyType === 'Multiple' && (
+                <NumberInput
+                  label="How many?"
+                  placeholder="Enter number"
+                  min={3}
+                  max={12}
+                  allowDecimal={false}
+                  value={formData.pregnancy_multiple_count}
+                  onChange={(val) => setFormData({ ...formData, pregnancy_multiple_count: val })}
+                />
+              )}
+            </Stack>
+          </Paper>
+        </Grid.Col>
+
+        <Grid.Col span={4}>
+          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ position: 'relative', zIndex: 1, opacity: isAborted ? 0.5 : 1 }}>
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">
+                Baby Details
+              </Text>
+            </Box>
+            <Stack p="sm" gap="xs">
+              {babyCount > 1 && (
+                <Select
+                  label="Select baby to edit"
+                  placeholder="Choose..."
+                  data={Array.from({ length: babyCount }, (_, i) => ({ value: String(i), label: `Baby ${i + 1}` }))}
+                  value={String(effectiveIndex)}
+                  onChange={(val) => val != null && setSelectedBabyIndex(Number(val))}
+                />
+              )}
+              <NumberInput
+                disabled={isAborted}
+                label="Weight (grams)"
+                placeholder="e.g. 3000"
+                value={currentBaby.weight}
+                onChange={(val) => handleBirthWeightChange(val, effectiveIndex)}
+              />
+              <Select
+                disabled
+                label="Category"
+                placeholder="--"
+                data={[
+                  { value: 'Normal', label: 'A - Normal (>= 2500g)' },
+                  { value: 'Low', label: 'B - Low (< 2500g)' },
+                  { value: 'Unknown', label: 'C - Unknown' },
+                ]}
+                value={currentBaby.category || ''}
+                readOnly
+                variant="filled"
+              />
+              <Input.Wrapper label="Sex of Baby">
+                <Group mt="xs" gap="md">
+                  <Button
+                    variant={currentBaby.sex === 'Male' ? 'filled' : 'light'}
+                    disabled={isAborted}
+                    onClick={() => handleBabySexChange('Male', effectiveIndex)}
+                  >
+                    Male
+                  </Button>
+                  <Button
+                    variant={currentBaby.sex === 'Female' ? 'filled' : 'light'}
+                    disabled={isAborted}
+                    onClick={() => handleBabySexChange('Female', effectiveIndex)}
+                  >
+                    Female
+                  </Button>
+                </Group>
+              </Input.Wrapper>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+
+        <Grid.Col span={4}>
+          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">Date/Time of Delivery</Text>
+            </Box>
+            <Stack p="sm" gap="xs">
+              <Input.Wrapper label="Date"><Input type="date" disabled={isAborted} value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /></Input.Wrapper>
+              <Input.Wrapper label="Time"><input type="time" disabled={isAborted} style={{ width: '100%', padding: '6px', border: '1px solid #ced4da', borderRadius: '4px' }} value={formData.delivery_time || ''} onChange={(e) => setFormData({ ...formData, delivery_time: e.target.value })} /></Input.Wrapper>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+      </Grid>
+
+      <Grid mt="md">
+        <Grid.Col span={6}>
+          <Paper withBorder radius="md" overflow="hidden" style={{ opacity: isAborted ? 0.5 : 1 }}>
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">Delivery Type</Text>
+            </Box>
+            <Stack p="sm">
+              <Input.Wrapper error={formErrors?.delivery_mode} description={formErrors?.delivery_mode ? null : undefined} errorProps={{ mt: 'sm' }}>
+                <Stack gap="xs">
+                  {[
+                    { value: 'CS', label: 'CS - Cesarean Section' },
+                    { value: 'VD', label: 'VD - Vaginal Delivery' },
+                    { value: 'CVCD', label: 'CVCD - Combined Vaginal-Cesarean' },
+                  ].map(({ value, label }) => (
+                    <Checkbox
+                      key={value}
+                      disabled={isAborted}
+                      checked={(formData.delivery_mode || '') === value}
+                      label={label}
+                      onChange={() => setFormData({ ...formData, delivery_mode: (formData.delivery_mode || '') === value ? '' : value })}
+                    />
+                  ))}
+                </Stack>
+              </Input.Wrapper>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">Birth Attendant</Text>
+            </Box>
+            <Stack p="sm">
+              <Select disabled={isAborted} placeholder="Select Attendant" data={[{ value: 'MD', label: 'MD - Doctor' }, { value: 'RN', label: 'RN - Nurse' }, { value: 'MW', label: 'MW - Midwife' }, { value: 'Others', label: 'Others' }]} value={formData.delivery_attendant || ''} onChange={(val) => setFormData({ ...formData, delivery_attendant: val })} />
+              {formData.delivery_attendant === 'Others' && (<TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_attendant_specify || ''} onChange={(e) => setFormData({ ...formData, delivery_attendant_specify: e.target.value })} />)}
+            </Stack>
+          </Paper>
+        </Grid.Col>
+      </Grid>
+
+      <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
+        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+          <Text size="sm" fw={700} c="blue.9" align="center">Birth Registration</Text>
+        </Box>
+        <Stack p="sm" gap="xs">
+          <Input.Wrapper label="Birth Registered?">
+            <Group mt="xs" gap="md">
+              <Checkbox
+                label="Yes"
+                checked={formData.birth_registered === true}
+                onChange={(e) => {
+                  const checked = e.currentTarget.checked;
+                  setFormData({
+                    ...formData,
+                    birth_registered: checked ? true : null,
+                    ...(checked ? {} : { birth_registration_date: '' }),
+                  });
+                }}
+              />
+              <Checkbox
+                label="No"
+                checked={formData.birth_registered === false}
+                onChange={(e) => {
+                  const checked = e.currentTarget.checked;
+                  if (checked) {
+                    setFormData({
+                      ...formData,
+                      birth_registered: false,
+                      birth_registration_date: '',
+                    });
+                  }
+                }}
+              />
+            </Group>
+          </Input.Wrapper>
+          {formData.birth_registered === true && (
+            <Input.Wrapper label="Date of registration">
+              <Input
+                type="date"
+                value={formData.birth_registration_date || ''}
+                onChange={(e) => setFormData({ ...formData, birth_registration_date: e.target.value })}
+              />
+            </Input.Wrapper>
+          )}
+        </Stack>
+      </Paper>
+
+      <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
+        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+          <Text size="sm" fw={700} c="blue.9" align="center">Place of Delivery</Text>
+        </Box>
+        <Grid p="sm">
+          <Grid.Col span={4}>
+            <Select disabled={isAborted} label="Place" placeholder="Select Place..." data={['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary', 'Ambulance', 'Others']} value={formData.delivery_place || ''} onChange={(val) => setFormData({ ...formData, delivery_place: val, ...(publicFacilityPlaces.includes(val || '') ? { delivery_facility_type: 'Public' } : {}), ...(val !== 'Others' ? { delivery_non_health_facility: '', delivery_non_health_place: '' } : {}) })} />
+          </Grid.Col>
+          <Grid.Col span={4}>
+            <Select disabled={isAborted || isPublicFacilityPlace} label="Facility Type" placeholder="Select Type..." data={['Public', 'Private']} value={isPublicFacilityPlace ? 'Public' : (formData.delivery_facility_type || '')} onChange={(val) => setFormData({ ...formData, delivery_facility_type: val })} />
+          </Grid.Col>
+          <Grid.Col span={4}>
+            <Stack gap="xs">
+              <Select disabled={isAborted} label="BEmONC/CEmONC Capable?" placeholder="--" data={['Yes', 'No']} value={formData.delivery_place_capable || ''} onChange={(val) => setFormData({ ...formData, delivery_place_capable: val })} />
+              {formData.delivery_place === 'Others' && (
+                <>
+                  <Select disabled={isAborted} label="Non-Health Facility" placeholder="Select..." data={['Home', 'Others']} value={formData.delivery_non_health_facility || ''} onChange={(val) => setFormData({ ...formData, delivery_non_health_facility: val || '', delivery_non_health_place: val === 'Others' ? (formData.delivery_non_health_place || '') : '' })} />
+                  {formData.delivery_non_health_facility === 'Others' && (
+                    <TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_non_health_place || ''} onChange={(e) => setFormData({ ...formData, delivery_non_health_place: e.target.value })} />
+                  )}
+                </>
+              )}
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Paper>
+
+      <Group justify="flex-end" mt="md">
+        <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('postnatal')}>Next Section</Button>
+      </Group>
+    </>
+  );
+}
