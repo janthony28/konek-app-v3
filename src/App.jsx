@@ -249,9 +249,14 @@ function MainApp({ session, onLogout }) {
       query = query.eq('created_by', session.user.id);
     }
 
-    const { error } = await query;
+    const { data, error } = await query.select();
     if (error) {
       notifications.show({ title: 'Error', message: error.message, color: 'red' });
+      return;
+    }
+
+    if (data && data.length === 0) {
+      notifications.show({ title: 'Deletion Failed', message: 'The database blocked this deletion (likely due to Supabase RLS policies). Please contact an administrator.', color: 'red' });
       return;
     }
 
@@ -910,7 +915,7 @@ function MainApp({ session, onLogout }) {
 
   const mainContent =
     activePage === 'dashboard' ? <DashboardView patients={patients} currentTime={currentTime} handleAddClick={handleAddClick} onFilterSelect={handleFilterSelect} /> :
-      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} /> :
+      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} currentUserId={session?.user?.id} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} /> :
         activePage === 'reports' ? <ReportsView patients={patients} allowedBarangays={allowedBarangays} /> :
           activePage === 'statistics' ? <StatisticsView isAdmin={isAdmin} userId={session.user.id} onEditRecord={(recordId) => { const patient = patients.find((p) => p.id === recordId); if (patient) handleEditClick(patient); else { fetchPatients().then(() => { const fresh = patients.find((p) => p.id === recordId); if (fresh) handleEditClick(fresh); }); } }} /> :
             activePage === 'users' && isAdmin ? <UserManagementView /> :

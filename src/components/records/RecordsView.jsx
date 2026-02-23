@@ -35,6 +35,7 @@ export default function RecordsView({
   handleEditClick,
   handleDelete,
   isAdmin,
+  currentUserId,
   getAgeGroup,
   filterStatus,
   setFilterStatus,
@@ -258,18 +259,20 @@ export default function RecordsView({
                         >
                           <Edit size={18} />
                         </ActionIcon>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          onClick={() => handleDelete(p)}
-                          size="lg"
-                          radius="md"
-                          style={{
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <Trash size={18} />
-                        </ActionIcon>
+                        {(isAdmin || p.created_by === currentUserId) && (
+                          <ActionIcon
+                            color="red"
+                            variant="light"
+                            onClick={() => handleDelete(p)}
+                            size="lg"
+                            radius="md"
+                            style={{
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <Trash size={18} />
+                          </ActionIcon>
+                        )}
                       </Group>
                     </Table.Td>
                   </Table.Tr>
