@@ -30,7 +30,9 @@ const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).ma
 
 const BARANGAY_OPTIONS = [{ value: '', label: 'All barangays' }, ...BATANGAS_BARANGAYS];
 
-export default function ReportsView({ patients }) {
+export default function ReportsView({ patients, allowedBarangays = [] }) {
+  const barangayOptions = [{ value: '', label: 'All barangays' }, ...(allowedBarangays.length > 0 ? allowedBarangays.map(b => ({ value: b, label: b })) : BATANGAS_BARANGAYS)];
+
   // FHSIS M1 tile: its own filters
   const [fhsisMonth, setFhsisMonth] = useState(String(currentDate.getMonth() + 1));
   const [fhsisYear, setFhsisYear] = useState(String(currentYear));
@@ -109,7 +111,7 @@ export default function ReportsView({ patients }) {
               <Select
                 label="Barangay"
                 placeholder="All barangays"
-                data={BARANGAY_OPTIONS}
+                data={barangayOptions}
                 value={fhsisBarangay}
                 onChange={(v) => setFhsisBarangay(v ?? '')}
                 searchable
@@ -166,7 +168,7 @@ export default function ReportsView({ patients }) {
               <Select
                 label="Barangay"
                 placeholder="All barangays"
-                data={BARANGAY_OPTIONS}
+                data={barangayOptions}
                 value={tclBarangay}
                 onChange={(v) => setTclBarangay(v ?? '')}
                 searchable

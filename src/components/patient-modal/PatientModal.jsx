@@ -65,6 +65,7 @@ export default function PatientModal({
   cancelEditPncContact,
   handleBirthWeightChange,
   handleBabySexChange,
+  allowedBarangays,
   totalIFA,
   totalMMS,
   ifaProgress,
@@ -86,7 +87,7 @@ export default function PatientModal({
         </Tabs.List>
 
         <Tabs.Panel value="general">
-          <GeneralTab formData={formData} setFormData={setFormData} formErrors={formErrors} getAgeGroup={getAgeGroup} handleLmpChange={handleLmpChange} nextTab={nextTab} />
+          <GeneralTab formData={formData} setFormData={setFormData} formErrors={formErrors} getAgeGroup={getAgeGroup} handleLmpChange={handleLmpChange} nextTab={nextTab} allowedBarangays={allowedBarangays} />
         </Tabs.Panel>
 
         <Tabs.Panel value="prenatal">

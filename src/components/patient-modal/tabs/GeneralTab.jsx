@@ -2,7 +2,8 @@ import { Paper, Box, Grid, TextInput, Input, NumberInput, Select, Checkbox, Stac
 import { ArrowRight } from 'lucide-react';
 import { BATANGAS_BARANGAYS } from '../../../lib/constants';
 
-export default function GeneralTab({ formData, setFormData, formErrors, getAgeGroup, handleLmpChange, nextTab }) {
+export default function GeneralTab({ formData, setFormData, formErrors, getAgeGroup, handleLmpChange, nextTab, allowedBarangays = [] }) {
+  const barangayOptions = allowedBarangays.length > 0 ? allowedBarangays.map(b => ({ value: b, label: b })) : BATANGAS_BARANGAYS;
   return (
     <>
       <Paper withBorder radius="md" overflow="hidden" mb="md">
@@ -14,7 +15,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           <Grid.Col span={4}> <TextInput error={formErrors.first_name} label="First Name" placeholder="Juana" withAsterisk value={formData.first_name || ''} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} /> </Grid.Col>
           <Grid.Col span={4}> <TextInput label="Middle Name" placeholder="Santos" value={formData.middle_name || ''} onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })} /> </Grid.Col>
           <Grid.Col span={12}> <TextInput error={formErrors.address} withAsterisk label="Complete Address" placeholder="House No., Street, etc." value={formData.address || ''} onChange={(e) => setFormData({ ...formData, address: e.target.value })} /> </Grid.Col>
-          <Grid.Col span={6}> <Select error={formErrors.barangay} label="Barangay" placeholder="Select Barangay" data={BATANGAS_BARANGAYS} searchable value={formData.barangay || ''} onChange={(val) => setFormData({ ...formData, barangay: val })} /> </Grid.Col>
+          <Grid.Col span={6}> <Select error={formErrors.barangay} label="Barangay" placeholder="Select Barangay" data={barangayOptions} searchable value={formData.barangay || ''} onChange={(val) => setFormData({ ...formData, barangay: val })} /> </Grid.Col>
           <Grid.Col span={6}> <TextInput label="Sitio / Purok" placeholder="(Optional)" value={formData.sitio || ''} onChange={(e) => setFormData({ ...formData, sitio: e.target.value })} /> </Grid.Col>
           <Grid.Col span={6}>
             <TextInput

@@ -39,7 +39,9 @@ export default function RecordsView({
   filterStatus,
   setFilterStatus,
   modalOpened,
+  allowedBarangays = [],
 }) {
+  const barangayOptions = [{ value: '', label: 'All barangays' }, ...(allowedBarangays.length > 0 ? allowedBarangays.map(b => ({ value: b, label: b })) : BATANGAS_BARANGAYS)];
   const [recordMonth, setRecordMonth] = useState('');
   const [recordYear, setRecordYear] = useState(String(currentYear));
   const [recordBarangay, setRecordBarangay] = useState('');
@@ -148,7 +150,7 @@ export default function RecordsView({
             <Select label="Year" data={YEAR_OPTIONS} value={recordYear} onChange={(v) => setRecordYear(v ?? String(currentYear))} size="xs" />
           </Grid.Col>
           <Grid.Col span={{ base: 12, xs: 12, sm: 3 }}>
-            <Select label="Barangay" placeholder="All barangays" data={BARANGAY_OPTIONS} value={recordBarangay || null} onChange={(v) => setRecordBarangay(v ?? '')} searchable clearable allowDeselect size="xs" />
+            <Select label="Barangay" placeholder="All barangays" data={barangayOptions} value={recordBarangay || null} onChange={(v) => setRecordBarangay(v ?? '')} searchable clearable allowDeselect size="xs" />
           </Grid.Col>
           <Grid.Col span={{ base: 12, xs: 6, sm: 2 }}>
             <Select

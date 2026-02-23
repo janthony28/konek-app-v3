@@ -18,6 +18,9 @@ import PatientModal from './components/patient-modal/PatientModal';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { Box, Loader, Text } from '@mantine/core';
+import UserManagementView from './components/admin/UserManagementView';
+import { ensureUserProfileExists, fetchUserProfile } from './services/userProfileService';
+import { BATANGAS_BARANGAYS_LIST } from './lib/constants';
 
 function getHashType() {
   const hash = window.location.hash.slice(1);
@@ -198,12 +201,42 @@ function MainApp({ session, onLogout }) {
   const [newPncContact, setNewPncContact] = useState({ date: '' });
   const [editingPncContactIndex, setEditingPncContactIndex] = useState(null);
 
+  const [allowedBarangays, setAllowedBarangays] = useState([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
-  useEffect(() => { fetchPatients(); }, []);
+
+  useEffect(() => {
+    async function initProfile() {
+      if (isAdmin) {
+        setAllowedBarangays(BATANGAS_BARANGAYS_LIST);
+      } else {
+        await ensureUserProfileExists(session.user.id, session.user.email);
+        const userBarangays = await fetchUserProfile(session.user.id);
+        setAllowedBarangays(userBarangays || []);
+      }
+      setProfileLoaded(true);
+    }
+    initProfile();
+  }, [session.user.id, session.user.email, isAdmin]);
+
+  useEffect(() => {
+    if (profileLoaded) {
+      fetchPatients();
+    }
+  }, [profileLoaded, allowedBarangays]);
 
   async function fetchPatients() {
+    if (!profileLoaded) return;
     let query = supabase.from('maternal_records').select('*').order('created_at', { ascending: false });
-    if (!isAdmin) query = query.eq('created_by', session.user.id);
+    if (!isAdmin) {
+      if (allowedBarangays.length > 0) {
+        query = query.in('barangay', allowedBarangays);
+      } else {
+        setPatients([]);
+        return;
+      }
+    }
     const { data, error } = await query;
     if (!error) setPatients(data || []);
   }
@@ -869,11 +902,12 @@ function MainApp({ session, onLogout }) {
 
   const mainContent =
     activePage === 'dashboard' ? <DashboardView patients={patients} currentTime={currentTime} handleAddClick={handleAddClick} onFilterSelect={handleFilterSelect} /> :
-      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} /> :
-        activePage === 'reports' ? <ReportsView patients={patients} /> :
+      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} /> :
+        activePage === 'reports' ? <ReportsView patients={patients} allowedBarangays={allowedBarangays} /> :
           activePage === 'statistics' ? <StatisticsView isAdmin={isAdmin} userId={session.user.id} onEditRecord={(recordId) => { const patient = patients.find((p) => p.id === recordId); if (patient) handleEditClick(patient); else { fetchPatients().then(() => { const fresh = patients.find((p) => p.id === recordId); if (fresh) handleEditClick(fresh); }); } }} /> :
-            activePage === 'help' ? <HelpView /> :
-              activePage === 'about' ? <AboutView /> : null;
+            activePage === 'users' && isAdmin ? <UserManagementView /> :
+              activePage === 'help' ? <HelpView /> :
+                activePage === 'about' ? <AboutView /> : null;
 
   return (
     <>
@@ -898,6 +932,7 @@ function MainApp({ session, onLogout }) {
       <PatientModal
         opened={opened}
         close={close}
+        allowedBarangays={allowedBarangays}
         submitting={submitting}
         isEditing={isEditing}
         formData={formData}
