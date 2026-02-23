@@ -16,7 +16,7 @@ export default function LabsTab({ formData, setFormData, newLab, setNewLab, addL
         <Stack p="sm">
           <Group align="end">
             <Select label="Test Type" data={['CBC', 'Gestational Diabetes', 'Syphilis', 'HIV', 'Hep B']} value={newLab.type} onChange={(v) => setNewLab({ ...newLab, type: v, date: '', result: '' })} style={{ width: 200 }} />
-            <Input.Wrapper label="Date"><Input type="date" value={newLab.date} onChange={(e) => setNewLab({ ...newLab, date: e.target.value })} /></Input.Wrapper>
+            <Input.Wrapper label="Date"><Input type="date" max={new Date().toISOString().split('T')[0]} value={newLab.date} onChange={(e) => setNewLab({ ...newLab, date: e.target.value })} /></Input.Wrapper>
             <Select
               key={newLab.type}
               label="Result"
@@ -41,24 +41,24 @@ export default function LabsTab({ formData, setFormData, newLab, setNewLab, addL
                 .map((log, originalIndex) => ({ log, originalIndex }))
                 .sort((a, b) => (b.log.date || '').localeCompare(a.log.date || ''))
                 .map(({ log, originalIndex }) => {
-                const isBad = ['Positive', 'With Anemia'].includes(log.result);
-                const isEditingRow = originalIndex === editingLabIndex;
-                return (
-                  <Table.Tr key={originalIndex} bg={isEditingRow ? 'green.0' : isBad ? 'red.1' : undefined} style={isEditingRow ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
-                    <Table.Td fw={500}>{log.type}</Table.Td>
-                    <Table.Td>{formatDate(log.date)}</Table.Td>
-                    <Table.Td>
-                      {isBad ? <Badge color="red">{log.result}</Badge> : <Badge color="gray">{log.result}</Badge>}
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <ActionIcon color="blue" size="sm" variant="light" onClick={() => startEditLabLog(originalIndex)} title="Edit"><Pencil size={14} /></ActionIcon>
-                        <ActionIcon color="red" size="sm" onClick={() => removeLabLog(originalIndex)} title="Delete"><Trash size={14} /></ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
+                  const isBad = ['Positive', 'With Anemia'].includes(log.result);
+                  const isEditingRow = originalIndex === editingLabIndex;
+                  return (
+                    <Table.Tr key={originalIndex} bg={isEditingRow ? 'green.0' : isBad ? 'red.1' : undefined} style={isEditingRow ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
+                      <Table.Td fw={500}>{log.type}</Table.Td>
+                      <Table.Td>{formatDate(log.date)}</Table.Td>
+                      <Table.Td>
+                        {isBad ? <Badge color="red">{log.result}</Badge> : <Badge color="gray">{log.result}</Badge>}
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap="xs">
+                          <ActionIcon color="blue" size="sm" variant="light" onClick={() => startEditLabLog(originalIndex)} title="Edit"><Pencil size={14} /></ActionIcon>
+                          <ActionIcon color="red" size="sm" onClick={() => removeLabLog(originalIndex)} title="Delete"><Trash size={14} /></ActionIcon>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
               {labLogs.length === 0 && <Table.Tr><Table.Td colSpan={4} align="center" c="dimmed">No lab results added yet.</Table.Td></Table.Tr>}
             </Table.Tbody>
           </Table>

@@ -32,7 +32,7 @@ export default function SupplementationTab({
         <Group align="center" gap="xl" p="sm">
           <Checkbox label="Deworming Completed (Yes/No)" checked={formData.is_deworming_given || false} onChange={(e) => setFormData({ ...formData, is_deworming_given: e.currentTarget.checked })} />
           {formData.is_deworming_given && (
-            <Group gap="xs"><Text size="sm" fw={500}>Date Given:</Text><Input type="date" value={formData.deworming_date || ''} onChange={(e) => setFormData({ ...formData, deworming_date: e.target.value })} /> </Group>
+            <Group gap="xs"><Text size="sm" fw={500}>Date Given:</Text><Input type="date" max={new Date().toISOString().split('T')[0]} value={formData.deworming_date || ''} onChange={(e) => setFormData({ ...formData, deworming_date: e.target.value })} /> </Group>
           )}
         </Group>
       </Paper>
@@ -47,7 +47,7 @@ export default function SupplementationTab({
               <Progress value={ifaProgress} color={totalIFA >= 180 ? 'green' : 'blue'} size="lg" radius="xl" />
               {totalIFA >= 180 && <Badge color="green">COMPLETED</Badge>}
               <Divider />
-              <Group grow><Input type="date" value={newSupp.type === 'IFA' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'IFA', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'IFA' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'IFA', count: v })} /></Group>
+              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'IFA' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'IFA', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'IFA' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'IFA', count: v })} /></Group>
               <Group gap={4}>
                 <Button size="xs" variant="light" onClick={addSupplement}>{editingSupp?.type === 'IFA' ? `Update Log (${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_ifa.length})` : '+ Add Log'}</Button>
                 {editingSupp?.type === 'IFA' && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditSupplement}>Cancel</Button>}
@@ -67,7 +67,7 @@ export default function SupplementationTab({
           <Paper withBorder h="100%" style={{ opacity: totalIFA > 0 ? 0.5 : 1, pointerEvents: totalIFA > 0 ? 'none' : 'auto', ...(editingSupp?.type === 'MMS' ? { borderLeft: '4px solid var(--mantine-color-green-6)', backgroundColor: 'var(--mantine-color-green-0)' } : {}) }}>
             <Box bg={editingSupp?.type === 'MMS' ? 'green.1' : totalIFA > 0 ? 'gray.1' : 'teal.0'} p="xs" style={{ borderBottom: '1px solid #eee' }}><Text fw={700} size="sm" c={editingSupp?.type === 'MMS' ? 'green.8' : 'teal.9'}>{editingSupp?.type === 'MMS' ? `Editing MMS log ${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_mms.length}` : 'MMS (Micronutrients)'}</Text></Box>
             <Stack p="sm">
-              <Group grow><Input type="date" value={newSupp.type === 'MMS' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'MMS', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'MMS' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'MMS', count: v })} /></Group>
+              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'MMS' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'MMS', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'MMS' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'MMS', count: v })} /></Group>
               <Group gap={4}>
                 <Button size="xs" variant="light" color="teal" onClick={addSupplement}>{editingSupp?.type === 'MMS' ? `Update Log (${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_mms.length})` : '+ Add Log'}</Button>
                 {editingSupp?.type === 'MMS' && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditSupplement}>Cancel</Button>}

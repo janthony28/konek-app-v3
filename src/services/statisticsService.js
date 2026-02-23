@@ -2,10 +2,10 @@ import { supabase } from '../supabaseClient';
 
 /* ── Solo-parent type labels (match GeneralTab select values) ─────────── */
 const SOLO_PARENT_TYPE_LABELS = {
-  unmarried: 'Unmarried mother/father',
+  unmarried: 'Unmarried',
   separated: 'Separated',
   legally_separated: 'Legally separated',
-  widow: 'Widow/Widower',
+  widow: 'Widow',
   incarcerated: 'Spouse incarcerated',
   disability: 'Spouse with disability',
   others: 'Others',

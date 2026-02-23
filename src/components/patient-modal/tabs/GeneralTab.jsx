@@ -19,9 +19,20 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           <Grid.Col span={6}>
             <TextInput
               label="Contact No."
-              placeholder="e.g. 09123456789"
+              placeholder="09XX-XXX-XXXX"
+              maxLength={13}
               value={formData.contact_no || ''}
-              onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                let formatted = digits;
+                if (digits.length > 4) {
+                  formatted = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+                }
+                if (digits.length > 7) {
+                  formatted = `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7, 11)}`;
+                }
+                setFormData({ ...formData, contact_no: formatted });
+              }}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -35,7 +46,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
           <Grid.Col span={6}> <NumberInput error={formErrors.age} label="Age" withAsterisk value={formData.age === null ? '' : formData.age} onChange={(val) => setFormData({ ...formData, age: val })} /> </Grid.Col>
           <Grid.Col span={6}> <TextInput label="Age Group" readOnly value={getAgeGroup(formData.age)} variant="filled" /> </Grid.Col>
-          <Grid.Col span={6}> <Input.Wrapper label="Date of Registration"> <Input type="date" value={formData.date_of_registration || ''} onChange={(e) => setFormData({ ...formData, date_of_registration: e.target.value })} /> </Input.Wrapper> </Grid.Col>
+          <Grid.Col span={6}> <Input.Wrapper label="Date of Registration"> <Input type="date" max={new Date().toISOString().split('T')[0]} value={formData.date_of_registration || ''} onChange={(e) => setFormData({ ...formData, date_of_registration: e.target.value })} /> </Input.Wrapper> </Grid.Col>
 
 
           <Grid.Col span={12}>
@@ -95,10 +106,10 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                   placeholder="Select one"
                   clearable
                   data={[
-                    { value: 'unmarried', label: 'Unmarried mother/father' },
+                    { value: 'unmarried', label: 'Unmarried' },
                     { value: 'separated', label: 'Separated (not legally married / abandoned)' },
                     { value: 'legally_separated', label: 'Legally separated' },
-                    { value: 'widow', label: 'Widow/Widower' },
+                    { value: 'widow', label: 'Widow' },
                     { value: 'incarcerated', label: 'Spouse incarcerated' },
                     { value: 'disability', label: 'Spouse with disability / unable to provide support' },
                     { value: 'others', label: 'Others (pls. specify)' },
@@ -224,7 +235,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           <Text size="sm" fw={700} c="blue.9" align="center">Pregnancy Information</Text>
         </Box>
         <Grid p="sm">
-          <Grid.Col span={6}> <Input.Wrapper label="LMP (Last Menstrual Period)" withAsterisk error={formErrors.lmp}> <Input error={formErrors.lmp} type="date" value={formData.lmp || ''} onChange={handleLmpChange} /> </Input.Wrapper> </Grid.Col>
+          <Grid.Col span={6}> <Input.Wrapper label="LMP (Last Menstrual Period)" withAsterisk error={formErrors.lmp}> <Input error={formErrors.lmp} type="date" max={new Date().toISOString().split('T')[0]} value={formData.lmp || ''} onChange={handleLmpChange} /> </Input.Wrapper> </Grid.Col>
           <Grid.Col span={6}> <Input.Wrapper label="EDC (Estimated Date of Confinement)"> <Input type="date" disabled style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', color: '#0ca678' }} value={formData.edc || ''} /> </Input.Wrapper> </Grid.Col>
           <Grid.Col span={6}> <NumberInput error={formErrors.gravida} label="Gravida (No. of Pregnancies)" withAsterisk min={1} value={formData.gravida === null ? '' : formData.gravida} onChange={(val) => setFormData({ ...formData, gravida: val })} /> </Grid.Col>
           <Grid.Col span={6}> <NumberInput error={formErrors.parity} label="Parity (No. of Births)" withAsterisk min={0} value={formData.parity === 0 ? 0 : (formData.parity ?? '')} onChange={(val) => setFormData({ ...formData, parity: val })} /> </Grid.Col>

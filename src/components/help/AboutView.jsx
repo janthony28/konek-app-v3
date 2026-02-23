@@ -19,14 +19,14 @@ export default function AboutView() {
           </Text>
 
           <Text size="sm">
-            The system was developed in partnership with the <Text component="span" fw={700}>Batangas City Local Government Unit</Text>, working closely with the <Text component="span" fw={700}>City Health Office</Text> and designated <Text component="span" fw={700}>healthcare personnel</Text> to address real-world challenges faced by barangay health workers.
+            The system was developed in partnership with the <Text component="span" fw={700}>Batangas City Local Government Unit</Text>, working closely with the <Text component="span" fw={700}>City Health Office</Text> and designated <Text component="span" fw={700}>healthcare personnel</Text> to address real-world challenges faced by healthcare workers.
           </Text>
 
           <Text size="sm">
             The project responds to the challenges faced by barangay health centers, where maternal records are often documented using paper forms or spreadsheets. These manual processes can be time-consuming, prone to errors, and difficult to access when needed.
           </Text>
 
-          <Text size="sm" fw={600}>KONEK provides a lightweight and user-friendly digital platform designed to support the daily work of midwives and primary health workers. The system aims to:</Text>
+          <Text size="sm" fw={600}>KONEK provides a lightweight and user-friendly digital platform designed to support the daily work of midwives and primary healthcare workers. The system aims to:</Text>
           <List size="sm" spacing="xs" withPadding>
             <List.Item>Simplify maternal health data recording</List.Item>
             <List.Item>Improve accuracy and completeness of reports</List.Item>

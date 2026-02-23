@@ -73,7 +73,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
               <Text size="sm" fw={700} c="blue.9" align="center">Pregnancy Outcome</Text>
             </Box>
             <Stack p="sm" gap="xs">
-              <Input.Wrapper label="Date Terminated"> <Input type="date" value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /> </Input.Wrapper>
+              <Input.Wrapper label="Date Terminated"> <Input type="date" max={new Date().toISOString().split('T')[0]} value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /> </Input.Wrapper>
               <Select
                 label="Outcome"
                 placeholder="--"
@@ -193,7 +193,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
               <Text size="sm" fw={700} c="blue.9" align="center">Date/Time of Delivery</Text>
             </Box>
             <Stack p="sm" gap="xs">
-              <Input.Wrapper label="Date"><Input type="date" disabled={isAborted} value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /></Input.Wrapper>
+              <Input.Wrapper label="Date"><Input type="date" max={new Date().toISOString().split('T')[0]} disabled={isAborted} value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /></Input.Wrapper>
               <Input.Wrapper label="Time"><input type="time" disabled={isAborted} style={{ width: '100%', padding: '6px', border: '1px solid #ced4da', borderRadius: '4px' }} value={formData.delivery_time || ''} onChange={(e) => setFormData({ ...formData, delivery_time: e.target.value })} /></Input.Wrapper>
             </Stack>
           </Paper>
@@ -279,6 +279,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
             <Input.Wrapper label="Date of registration">
               <Input
                 type="date"
+                max={new Date().toISOString().split('T')[0]}
                 value={formData.birth_registration_date || ''}
                 onChange={(e) => setFormData({ ...formData, birth_registration_date: e.target.value })}
               />

@@ -36,7 +36,7 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
         </Box>
         <Stack p="sm">
           <Group grow>
-            <Input.Wrapper label="Visit Date" withAsterisk> <Input type="date" value={newVisit.date || ''} onChange={handleVisitDateChange} /> </Input.Wrapper>
+            <Input.Wrapper label="Visit Date" withAsterisk> <Input type="date" max={new Date().toISOString().split('T')[0]} value={newVisit.date || ''} onChange={handleVisitDateChange} /> </Input.Wrapper>
             <TextInput label="AOG" readOnly value={newVisit.aog} placeholder="Auto" />
             <TextInput label="Trimester" readOnly value={newVisit.trimester} placeholder="Auto" />
           </Group>

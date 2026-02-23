@@ -1,4 +1,4 @@
-import { Stack, Title, Text, Tabs, Accordion, Paper, List, Anchor } from '@mantine/core';
+import { Stack, Title, Text, Tabs, Accordion, Paper, List, Anchor, Box } from '@mantine/core';
 import { HelpCircle, Mail } from 'lucide-react';
 
 const FAQ_ITEMS = [
@@ -138,11 +138,39 @@ export default function HelpView() {
           <Paper p="xl" radius="md" withBorder>
             <Title order={4} mb="sm">Contact Us</Title>
             <Text size="sm" c="dimmed" mb="md">
-              For technical support, account issues, or questions about the KOmunidad NEtwork for Kalusugan (KONEK) app, please contact your administrator.
+              For any inquiries, feel free to reach out to our team:
             </Text>
-            <Stack gap="xs">
-              <Text size="sm"><strong>Email:</strong> Contact your local admin or use the support email provided by your organization.</Text>
-              <Text size="sm"><strong>Admin users:</strong> If you are an administrator, you can reach the system admin at <Anchor href="mailto:admin@konek.ph" target="_blank" rel="noopener noreferrer">admin@konek.ph</Anchor> for system-level support.</Text>
+            <Stack gap="sm">
+              <Box>
+                <Text size="sm" fw={700}>Alyssa Jane G. Panaligan</Text>
+                <Text size="sm"><Anchor href="mailto:23-51350@g.batstate-u.edu.ph">23-51350@g.batstate-u.edu.ph</Anchor></Text>
+                <Text size="sm">0966-366-6553</Text>
+              </Box>
+              <Box>
+                <Text size="sm" fw={700}>Abygael Victoria L. Aquino</Text>
+                <Text size="sm"><Anchor href="mailto:23-55758@g.batstate-u.edu.ph">23-55758@g.batstate-u.edu.ph</Anchor></Text>
+                <Text size="sm">0906-011-9240</Text>
+              </Box>
+              <Box>
+                <Text size="sm" fw={700}>Marian B. Bauan</Text>
+                <Text size="sm"><Anchor href="mailto:23-59213@g.batstate-u.edu.ph">23-59213@g.batstate-u.edu.ph</Anchor></Text>
+                <Text size="sm">0967-134-0680</Text>
+              </Box>
+              <Box>
+                <Text size="sm" fw={700}>Jonna Mae O. Cabrera</Text>
+                <Text size="sm"><Anchor href="mailto:23-51335@g.batstae-u.edu.ph">23-51335@g.batstae-u.edu.ph</Anchor></Text>
+                <Text size="sm">0929-369-1500</Text>
+              </Box>
+              <Box>
+                <Text size="sm" fw={700}>Ysabela Marie M. Palbacal</Text>
+                <Text size="sm"><Anchor href="mailto:23-59368@g.batstate-u.edu.ph">23-59368@g.batstate-u.edu.ph</Anchor></Text>
+                <Text size="sm">0917-803-4599</Text>
+              </Box>
+              <Box>
+                <Text size="sm" fw={700}>Meliah Isabel P. Sebuc</Text>
+                <Text size="sm"><Anchor href="mailto:23-50267@g.batstate-u.edu.ph">23-50267@g.batstate-u.edu.ph</Anchor></Text>
+                <Text size="sm">0956-711-8678</Text>
+              </Box>
             </Stack>
           </Paper>
         </Tabs.Panel>

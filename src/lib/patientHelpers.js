@@ -24,18 +24,54 @@ export function getLatestPrenatalVisit(prenatalVisits) {
 }
 
 /** True if patient has no delivery and (no visits or last visit not in current month/year). */
-export function isPatientDue(p, currentMonth, currentYear) {
+export function isPatientDue(p) {
   if (p.delivery_date || p.delivery_outcome) return false;
+
+  if (!p.lmp) return false;
+
+  const today = new Date();
+  const currentAOG = getRawWeeksAOG(p.lmp, today.toISOString());
+  if (currentAOG === null) return false;
+
   const lastVisit = getLatestPrenatalVisit(p.prenatal_visits);
-  if (!lastVisit || !lastVisit.date) return true;
 
-  const lastVisitDate = parseVisitDate(lastVisit.date);
-  if (!lastVisitDate) return true;
+  const SCHEDULE = [
+    { min: 8, max: 13 },   // Contact 1
+    { min: 14, max: 20 },  // Contact 2
+    { min: 21, max: 27 },  // Contact 3
+    { min: 28, max: 30 },  // Contact 4
+    { min: 31, max: 34 },  // Contact 5
+    { min: 35, max: 35 },  // Contact 6
+    { min: 36, max: 36 },  // Contact 7
+    { min: 37, max: 40 }   // Contact 8
+  ];
 
-  if (lastVisitDate.getMonth() !== currentMonth || lastVisitDate.getFullYear() !== currentYear) {
-    return true;
+  let targetWindow = SCHEDULE[0]; // default expected for ANC 1
+
+  if (lastVisit && lastVisit.date) {
+    const lastVisitAOG = getRawWeeksAOG(p.lmp, lastVisit.date);
+    if (lastVisitAOG !== null) {
+      // Find the milestone window the last visit fell into
+      const currentMilestoneIndex = SCHEDULE.findIndex(w => lastVisitAOG <= w.max);
+
+      if (currentMilestoneIndex !== -1) {
+        // Find next expected milestone
+        const nextMilestoneIndex = currentMilestoneIndex + 1;
+        if (nextMilestoneIndex < SCHEDULE.length) {
+          targetWindow = SCHEDULE[nextMilestoneIndex];
+        } else {
+          // Passed 40 weeks, expect weekly visits or delivery
+          targetWindow = { min: lastVisitAOG + 1, max: lastVisitAOG + 1 };
+        }
+      } else {
+        targetWindow = { min: lastVisitAOG + 1, max: lastVisitAOG + 1 };
+      }
+    }
   }
-  return false;
+
+  // Due / Overdue if current AOG has exactly reached the start of the target window (or gone beyond it)
+  // Which correctly flags patients who are in their active recommended visit window as well as those who missed it.
+  return currentAOG >= targetWindow.min;
 }
 
 export function getAgeGroup(age) {

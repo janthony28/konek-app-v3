@@ -23,7 +23,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
   const currentMonth = currentTime.getMonth();
   const currentYear = currentTime.getFullYear();
   const currentMonthName = currentTime.toLocaleString('default', { month: 'long' });
-  const allDuePatients = safePatients.filter((p) => isPatientDue(p, currentMonth, currentYear));
+  const allDuePatients = safePatients.filter((p) => isPatientDue(p));
   const duePatients = allDuePatients
     .sort((a, b) => {
       const aLatestVisit = getLatestPrenatalVisit(a.prenatal_visits);
@@ -355,6 +355,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
               <Table.Tr>
                 <Table.Th>Name</Table.Th>
                 <Table.Th>Barangay</Table.Th>
+                <Table.Th>Contact No.</Table.Th>
                 <Table.Th>Last Visit</Table.Th>
                 <Table.Th>Created</Table.Th>
                 <Table.Th>Modified</Table.Th>
@@ -374,6 +375,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
                   <Table.Tr key={p.id}>
                     <Table.Td fw={600}>{p.last_name}, {p.first_name}</Table.Td>
                     <Table.Td>{p.barangay}</Table.Td>
+                    <Table.Td c={p.contact_no ? undefined : "dimmed"}>{p.contact_no || '—'}</Table.Td>
                     <Table.Td c="dimmed">{lastVisitText}</Table.Td>
                     <Table.Td c="dimmed">{createdText}</Table.Td>
                     <Table.Td c="dimmed">{modifiedText}</Table.Td>

@@ -40,7 +40,7 @@ export default function PostnatalTab({
           <Stack p="sm" gap="sm">
             <Group grow>
               <Input.Wrapper label="Contact Date">
-                <Input type="date" value={newPncContact.date || ''} onChange={handlePncContactDateChange} />
+                <Input type="date" max={new Date().toISOString().split('T')[0]} value={newPncContact.date || ''} onChange={handlePncContactDateChange} />
               </Input.Wrapper>
             </Group>
             <Group gap="xs">
@@ -100,7 +100,7 @@ export default function PostnatalTab({
               <Divider mb="sm" />
               <Stack gap="xs">
                 <Group grow>
-                  <Input type="date" value={newPostpartumLog.date} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, date: e.target.value })} />
+                  <Input type="date" max={new Date().toISOString().split('T')[0]} value={newPostpartumLog.date} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, date: e.target.value })} />
                   <NumberInput placeholder="Tabs" value={newPostpartumLog.count} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, count: v })} />
                 </Group>
                 <Select placeholder="Remarks (Optional)" data={[{ value: 'Trans In', label: 'A - Trans In' }, { value: 'Trans Out', label: 'B - Trans Out before 4PNC' }]} value={newPostpartumLog.remarks} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, remarks: v })} clearable />
@@ -142,7 +142,7 @@ export default function PostnatalTab({
                 <Paper withBorder p="xs">
                   <Text size="xs" fw={700} mb={5}>Completed Vit. A?</Text>
                   <Text size="sm" fw={500} c={isVitACompleted ? 'green' : 'dimmed'} mb="xs">{isVitACompleted ? 'Yes' : 'No'}</Text>
-                  <input type="date" style={{ width: '100%', padding: '4px', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '12px' }} value={formData.vit_a_completed_date || ''} onChange={(e) => setFormData({ ...formData, vit_a_completed_date: e.target.value })} />
+                  <input type="date" max={new Date().toISOString().split('T')[0]} style={{ width: '100%', padding: '4px', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '12px' }} value={formData.vit_a_completed_date || ''} onChange={(e) => setFormData({ ...formData, vit_a_completed_date: e.target.value })} />
                 </Paper>
               </Grid.Col>
             </Grid>

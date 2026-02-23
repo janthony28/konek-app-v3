@@ -80,7 +80,7 @@ export default function RecordsView({
   }
   if (dueForVisitOnly) {
     const now = new Date();
-    displayPatients = displayPatients.filter((p) => isPatientDue(p, now.getMonth(), now.getFullYear()));
+    displayPatients = displayPatients.filter((p) => isPatientDue(p));
   }
 
   const filtered = displayPatients.filter(
@@ -204,6 +204,7 @@ export default function RecordsView({
                 <Table.Th>Name</Table.Th>
                 <Table.Th>Age Group</Table.Th>
                 <Table.Th>Barangay</Table.Th>
+                <Table.Th>Contact No.</Table.Th>
                 <Table.Th>Last Visit</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Action</Table.Th>
@@ -214,7 +215,7 @@ export default function RecordsView({
                 const latestVisit = getLatestPrenatalVisit(p.prenatal_visits);
                 const lastVisit = latestVisit ? formatDate(latestVisit.date) : '-';
                 const now = new Date();
-                const isDue = isPatientDue(p, now.getMonth(), now.getFullYear());
+                const isDue = isPatientDue(p);
                 const statusBadges = (
                   <Group gap={6} wrap="wrap">
                     {p.is_high_risk ? (
@@ -238,6 +239,7 @@ export default function RecordsView({
                     <Table.Td fw={600}>{p.last_name}, {p.first_name}</Table.Td>
                     <Table.Td>{getAgeGroup(p.age)}</Table.Td>
                     <Table.Td>{p.barangay}</Table.Td>
+                    <Table.Td c={p.contact_no ? undefined : "dimmed"}>{p.contact_no || '—'}</Table.Td>
                     <Table.Td c="dimmed">{lastVisit}</Table.Td>
                     <Table.Td>{statusBadges}</Table.Td>
                     <Table.Td>
@@ -273,7 +275,7 @@ export default function RecordsView({
               })}
               {filtered.length === 0 && (
                 <Table.Tr>
-                  <Table.Td colSpan={6} align="center" py="xl">
+                  <Table.Td colSpan={7} align="center" py="xl">
                     <Text c="dimmed" size="sm">No records found</Text>
                   </Table.Td>
                 </Table.Tr>

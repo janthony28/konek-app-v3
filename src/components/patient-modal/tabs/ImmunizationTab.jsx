@@ -13,11 +13,11 @@ export default function ImmunizationTab({ formData, setFormData, handleTdChange,
           <Table withTableBorder style={{ opacity: formData.td_completed_previously ? 0.5 : 1, pointerEvents: formData.td_completed_previously ? 'none' : 'auto' }}>
             <Table.Thead><Table.Tr><Table.Th>Dose</Table.Th><Table.Th>Date Given</Table.Th></Table.Tr></Table.Thead>
             <Table.Tbody>
-              <Table.Tr><Table.Td>Td1</Table.Td><Table.Td><Input type="date" variant="unstyled" value={formData.td1 || ''} onChange={(e) => handleTdChange('td1', e.target.value)} /></Table.Td></Table.Tr>
-              <Table.Tr><Table.Td>Td2</Table.Td><Table.Td><Input type="date" variant="unstyled" value={formData.td2 || ''} onChange={(e) => handleTdChange('td2', e.target.value)} /></Table.Td></Table.Tr>
-              <Table.Tr><Table.Td>Td3</Table.Td><Table.Td><Input type="date" variant="unstyled" value={formData.td3 || ''} onChange={(e) => handleTdChange('td3', e.target.value)} /></Table.Td></Table.Tr>
-              <Table.Tr><Table.Td>Td4</Table.Td><Table.Td><Input type="date" variant="unstyled" value={formData.td4 || ''} onChange={(e) => handleTdChange('td4', e.target.value)} /></Table.Td></Table.Tr>
-              <Table.Tr><Table.Td>Td5</Table.Td><Table.Td><Input type="date" variant="unstyled" value={formData.td5 || ''} onChange={(e) => handleTdChange('td5', e.target.value)} /></Table.Td></Table.Tr>
+              <Table.Tr><Table.Td>Td1</Table.Td><Table.Td><Input type="date" max={new Date().toISOString().split('T')[0]} variant="unstyled" value={formData.td1 || ''} onChange={(e) => handleTdChange('td1', e.target.value)} /></Table.Td></Table.Tr>
+              <Table.Tr><Table.Td>Td2</Table.Td><Table.Td><Input type="date" max={new Date().toISOString().split('T')[0]} variant="unstyled" value={formData.td2 || ''} onChange={(e) => handleTdChange('td2', e.target.value)} /></Table.Td></Table.Tr>
+              <Table.Tr><Table.Td>Td3</Table.Td><Table.Td><Input type="date" max={new Date().toISOString().split('T')[0]} variant="unstyled" value={formData.td3 || ''} onChange={(e) => handleTdChange('td3', e.target.value)} /></Table.Td></Table.Tr>
+              <Table.Tr><Table.Td>Td4</Table.Td><Table.Td><Input type="date" max={new Date().toISOString().split('T')[0]} variant="unstyled" value={formData.td4 || ''} onChange={(e) => handleTdChange('td4', e.target.value)} /></Table.Td></Table.Tr>
+              <Table.Tr><Table.Td>Td5</Table.Td><Table.Td><Input type="date" max={new Date().toISOString().split('T')[0]} variant="unstyled" value={formData.td5 || ''} onChange={(e) => handleTdChange('td5', e.target.value)} /></Table.Td></Table.Tr>
             </Table.Tbody>
           </Table>
           <Group grow mt="lg">
