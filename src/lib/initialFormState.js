@@ -42,11 +42,11 @@ export function getInitialFormState() {
     is_deworming_given: false,
 
     has_hypertension: false,
-    has_gestational_diabetes: false,
     has_advanced_maternal_age: false,
     has_multiple_gestation: false,
     has_multiple_miscarriages: false,
-    has_obesity: false,
+    has_high_bmi: false,
+    has_lab_positive: false,
     manual_risk: false,
     is_high_risk: false,
     high_risk_reason: '',

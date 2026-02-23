@@ -123,9 +123,20 @@ export default function PatientModal({
           <PostnatalTab formData={formData} setFormData={setFormData} newPostpartumLog={newPostpartumLog} setNewPostpartumLog={setNewPostpartumLog} addPostpartumLog={addPostpartumLog} removePostpartumLog={removePostpartumLog} editingPostpartumIndex={editingPostpartumIndex} startEditPostpartumLog={startEditPostpartumLog} cancelEditPostpartumLog={cancelEditPostpartumLog} newPncContact={newPncContact} setNewPncContact={setNewPncContact} handlePncContactDateChange={handlePncContactDateChange} addPncContact={addPncContact} removePncContact={removePncContact} editingPncContactIndex={editingPncContactIndex} startEditPncContact={startEditPncContact} cancelEditPncContact={cancelEditPncContact} postpartumProgress={postpartumProgress} prevTab={prevTab} />
         </Tabs.Panel>
       </Tabs>
-      <Button fullWidth mt="lg" onClick={handleSubmit} color={formData.manual_risk ? 'red' : 'teal'} size="md" loading={submitting} disabled={submitting}>
-        {isEditing ? 'Update Record' : (formData.manual_risk ? 'Save High Risk Record' : 'Save Normal Record')}
-      </Button>
+      {(() => {
+        const visits = formData.prenatal_visits || [];
+        const latestVisit = visits.length ? visits[visits.length - 1] : {};
+        const hasHighBmi = latestVisit.bmi_category === 'HIGH';
+        const hasLabPositive = (formData.lab_logs || []).some(
+          (log) => log.result === 'With Anemia' || log.result === 'Positive'
+        );
+        const isHighRisk = formData.manual_risk || hasHighBmi || hasLabPositive;
+        return (
+          <Button fullWidth mt="lg" onClick={handleSubmit} color={isHighRisk ? 'red' : 'teal'} size="md" loading={submitting} disabled={submitting}>
+            {isEditing ? 'Update Record' : (isHighRisk ? 'Save High Risk Record' : 'Save Normal Record')}
+          </Button>
+        );
+      })()}
     </Modal>
   );
 }

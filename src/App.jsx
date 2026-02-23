@@ -725,7 +725,7 @@ function MainApp({ session, onLogout }) {
     setFormData({
       ...initialFormState,
       ...cleanData,
-      manual_risk: patient.is_high_risk,
+      manual_risk: patient.manual_risk != null ? !!patient.manual_risk : !!patient.is_high_risk,
       delivery_attendant: attendant.main,
       delivery_attendant_specify: attendant.specify,
       prenatal_visits: patient.prenatal_visits || [],
@@ -810,9 +810,17 @@ function MainApp({ session, onLogout }) {
       };
       const ifaCompletionDate = getIfaCompletionDate(formData.postpartum_logs);
 
+      // Auto-detect high-risk from BMI and lab results
+      const hasHighBmi = latest.bmi_category === 'HIGH';
+      const hasLabPositive = (formData.lab_logs || []).some(
+        (log) => log.result === 'With Anemia' || log.result === 'Positive'
+      );
+
       const rawPayload = {
         ...formData,
-        is_high_risk: formData.manual_risk,
+        is_high_risk: formData.manual_risk || hasHighBmi || hasLabPositive,
+        has_high_bmi: hasHighBmi,
+        has_lab_positive: hasLabPositive,
         height: latest.height || null,
         weight: latest.weight || null,
         bmi: latest.bmi || null,

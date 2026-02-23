@@ -2,6 +2,9 @@
 export const BATANGAS_BARANGAYS_LIST = [
   'Alangilan', 'Balagtas', 'Balete', 'Banaba Center', 'Banaba Ibaba', 'Banaba Kanluran', 'Banaba Silangan',
   'Barangay 1 (Pob.)', 'Barangay 2 (Pob.)', 'Barangay 3 (Pob.)', 'Barangay 4 (Pob.)', 'Barangay 5 (Pob.)', 'Barangay 6 (Pob.)',
+  'Barangay 7 (Pob.)', 'Barangay 8 (Pob.)', 'Barangay 9 (Pob.)', 'Barangay 10 (Pob.)', 'Barangay 11 (Pob.)', 'Barangay 12 (Pob.)',
+  'Barangay 13 (Pob.)', 'Barangay 14 (Pob.)', 'Barangay 15 (Pob.)', 'Barangay 16 (Pob.)', 'Barangay 17 (Pob.)', 'Barangay 18 (Pob.)',
+  'Barangay 19 (Pob.)', 'Barangay 20 (Pob.)', 'Barangay 21 (Pob.)', 'Barangay 22 (Pob.)', 'Barangay 23 (Pob.)', 'Barangay 24 (Pob.)',
   'Bilogo', 'Bolbok', 'Bukal', 'Calicanto', 'Catandala', 'Concepcion', 'Conde Itaas', 'Conde Labak', 'Cuta', 'Dalig',
   'Dela Paz', 'Dela Paz Pulot Aplaya', 'Dela Paz Pulot Itaas', 'Dumantay', 'Dumuclay', 'Gulod Itaas', 'Gulod Labak',
   'Haligue Kanluran', 'Haligue Silangan', 'Ilijan', 'Kumba', 'Kumintang Ibaba', 'Kumintang Ilaya', 'Libjo',

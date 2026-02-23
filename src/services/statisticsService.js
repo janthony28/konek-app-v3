@@ -22,12 +22,20 @@ const PHILHEALTH_TYPE_LABELS = {
 /* ── High-risk reason flags ───────────────────────────────────────────── */
 const HIGH_RISK_REASON_FLAGS = [
   ['has_hypertension', 'Hypertension'],
-  ['has_gestational_diabetes', 'Gestational Diabetes'],
   ['has_advanced_maternal_age', 'Advanced Maternal Age'],
   ['has_multiple_gestation', 'Multiple Gestation'],
   ['has_multiple_miscarriages', 'History of Multiple Miscarriages'],
-  ['has_obesity', 'Obesity'],
+  ['has_high_bmi', 'Obesity'],
 ];
+
+/* Lab type → statistics reason label mapping */
+const LAB_REASON_LABELS = {
+  CBC: 'Anemia',
+  'Gestational Diabetes': 'Gestational Diabetes',
+  Syphilis: 'Syphilis',
+  HIV: 'HIV',
+  'Hep B': 'Hepatitis B',
+};
 
 /* ── Birth-registration field candidates ──────────────────────────────── */
 const BIRTH_REGISTRATION_FIELDS = [
@@ -93,6 +101,16 @@ function collectRiskReasons(record) {
   const reasons = [];
   for (const [key, label] of HIGH_RISK_REASON_FLAGS) {
     if (toBoolean(record?.[key])) reasons.push(label);
+  }
+  // Derive individual lab reasons from lab_logs
+  const labLogs = Array.isArray(record?.lab_logs) ? record.lab_logs : [];
+  const addedLabReasons = new Set();
+  for (const log of labLogs) {
+    const isBad = log.result === 'With Anemia' || log.result === 'Positive';
+    if (isBad && log.type && LAB_REASON_LABELS[log.type] && !addedLabReasons.has(log.type)) {
+      reasons.push(LAB_REASON_LABELS[log.type]);
+      addedLabReasons.add(log.type);
+    }
   }
   const customReason = String(record?.high_risk_reason || '').trim();
   if (customReason) reasons.push(customReason);

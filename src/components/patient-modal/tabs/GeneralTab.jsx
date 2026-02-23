@@ -263,11 +263,9 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                   ? {}
                   : {
                     has_hypertension: false,
-                    has_gestational_diabetes: false,
                     has_advanced_maternal_age: false,
                     has_multiple_gestation: false,
                     has_multiple_miscarriages: false,
-                    has_obesity: false,
                     high_risk_reason: '',
                     supplements_calcium: [],
                     calcium_carbonate_completed: false,
@@ -282,11 +280,9 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
               <Text size="sm" fw={500} c="dimmed">Select all that apply:</Text>
               {[
                 { key: 'has_hypertension', label: 'Hypertension' },
-                { key: 'has_gestational_diabetes', label: 'Gestational diabetes' },
                 { key: 'has_advanced_maternal_age', label: 'Advanced maternal age' },
                 { key: 'has_multiple_gestation', label: 'Multiple gestation (twins, etc.)' },
                 { key: 'has_multiple_miscarriages', label: 'Multiple miscarriages' },
-                { key: 'has_obesity', label: 'Obesity' },
               ].map(({ key, label }) => (
                 <Checkbox
                   key={key}
