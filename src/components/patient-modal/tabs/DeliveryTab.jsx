@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Paper, Box, Stack, Group, Grid, Input, Select, TextInput, Checkbox, Text, NumberInput, Button } from '@mantine/core';
-import { ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { getWeeksAOG } from '../../../lib/patientHelpers';
 
-export default function DeliveryTab({ formData, setFormData, formErrors, handleBirthWeightChange, handleBabySexChange, isAborted, nextTab }) {
+export default function DeliveryTab({ formData, setFormData, formErrors, handleBirthWeightChange, handleBabySexChange, isAborted, nextTab, prevTab }) {
   const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
 
   const pregnancyType = formData.pregnancy_type || '';
@@ -315,7 +315,8 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
         </Grid>
       </Paper>
 
-      <Group justify="flex-end" mt="md">
+      <Group justify="space-between" mt="md">
+        <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('labs')}>Previous</Button>
         <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('postnatal')}>Next Section</Button>
       </Group>
     </>

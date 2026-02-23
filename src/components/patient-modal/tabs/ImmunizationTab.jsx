@@ -1,7 +1,7 @@
 import { Paper, Box, Stack, Group, Table, Input, Button, Badge, Checkbox, Text } from '@mantine/core';
-import { ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function ImmunizationTab({ formData, setFormData, handleTdChange, getImmunizationStats, nextTab }) {
+export default function ImmunizationTab({ formData, setFormData, handleTdChange, getImmunizationStats, nextTab, prevTab }) {
   return (
     <>
       <Paper withBorder radius="md" overflow="hidden" mb="md">
@@ -26,7 +26,10 @@ export default function ImmunizationTab({ formData, setFormData, handleTdChange,
           </Group>
         </Box>
       </Paper>
-      <Group justify="flex-end" mt="md"><Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('supplementation')}>Next Section</Button></Group>
+      <Group justify="space-between" mt="md">
+        <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('prenatal')}>Previous</Button>
+        <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('supplementation')}>Next Section</Button>
+      </Group>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, Button, ActionIcon, Text, Progress, Divider, Checkbox, Badge } from '@mantine/core';
-import { ArrowRight, X, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
 export default function SupplementationTab({
@@ -16,6 +16,7 @@ export default function SupplementationTab({
   totalMMS,
   ifaProgress,
   nextTab,
+  prevTab,
 }) {
   const calciumCompleted = !!formData.calcium_carbonate_completed;
   const setCalciumCompleted = (completed) => {
@@ -114,7 +115,10 @@ export default function SupplementationTab({
           </Paper>
         </Grid.Col>
       </Grid>
-      <Group justify="flex-end" mt="md"><Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('labs')}>Next Section</Button></Group>
+      <Group justify="space-between" mt="md">
+        <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('immunization')}>Previous</Button>
+        <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('labs')}>Next Section</Button>
+      </Group>
     </>
   );
 }

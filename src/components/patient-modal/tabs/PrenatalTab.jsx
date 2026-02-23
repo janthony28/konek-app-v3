@@ -1,10 +1,10 @@
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, TextInput, Table, Button, ActionIcon, Text } from '@mantine/core';
-import { ArrowRight, Trash, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Trash, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
 const isEditing = (editingVisitIndex) => editingVisitIndex != null;
 
-export default function PrenatalTab({ formData, setFormData, newVisit, setNewVisit, handleVisitDateChange, handleBMIChange, addVisitToList, removeVisit, editingVisitIndex, startEditVisit, cancelEditVisit, nextTab }) {
+export default function PrenatalTab({ formData, setFormData, newVisit, setNewVisit, handleVisitDateChange, handleBMIChange, addVisitToList, removeVisit, editingVisitIndex, startEditVisit, cancelEditVisit, nextTab, prevTab }) {
   const editing = isEditing(editingVisitIndex);
   return (
     <>
@@ -86,7 +86,10 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
           </Box>
         </Box>
       </Paper>
-      <Group justify="flex-end" mt="md"><Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('immunization')}>Next Section</Button></Group>
+      <Group justify="space-between" mt="md">
+        <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('general')}>Previous</Button>
+        <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('immunization')}>Next Section</Button>
+      </Group>
     </>
   );
 }

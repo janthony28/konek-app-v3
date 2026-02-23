@@ -859,6 +859,7 @@ function MainApp({ session, onLogout }) {
   }
 
   const nextTab = (next) => setActiveTab(next);
+  const prevTab = (prev) => setActiveTab(prev);
   const totalIFA = formData.supplements_ifa.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
   const totalMMS = formData.supplements_mms.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
   const ifaProgress = Math.min((totalIFA / 180) * 100, 100);
@@ -914,6 +915,7 @@ function MainApp({ session, onLogout }) {
         setNewPostpartumLog={setNewPostpartumLog}
         handleSubmit={handleSubmit}
         nextTab={nextTab}
+        prevTab={prevTab}
         getAgeGroup={getAgeGroup}
         getImmunizationStats={getImmunizationStats}
         handleTdChange={handleTdChange}

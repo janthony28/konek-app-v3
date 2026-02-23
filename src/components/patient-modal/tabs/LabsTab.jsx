@@ -1,8 +1,8 @@
 import { Paper, Box, Stack, Group, Input, Select, Button, Table, ActionIcon, Text, Badge } from '@mantine/core';
-import { ArrowRight, Plus, Trash, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Trash, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
-export default function LabsTab({ formData, setFormData, newLab, setNewLab, addLabLog, removeLabLog, editingLabIndex, startEditLabLog, cancelEditLabLog, nextTab }) {
+export default function LabsTab({ formData, setFormData, newLab, setNewLab, addLabLog, removeLabLog, editingLabIndex, startEditLabLog, cancelEditLabLog, nextTab, prevTab }) {
   const labLogs = formData.lab_logs || [];
   const labCount = labLogs.length;
   return (
@@ -64,7 +64,10 @@ export default function LabsTab({ formData, setFormData, newLab, setNewLab, addL
           </Table>
         </Stack>
       </Paper>
-      <Group justify="flex-end" mt="md"><Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('delivery')}>Next Section</Button></Group>
+      <Group justify="space-between" mt="md">
+        <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('supplementation')}>Previous</Button>
+        <Button rightSection={<ArrowRight size={16} />} onClick={() => nextTab('delivery')}>Next Section</Button>
+      </Group>
     </>
   );
 }

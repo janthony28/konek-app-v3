@@ -1,5 +1,5 @@
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, Select, Button, Table, ActionIcon, Text, Progress, Divider, Badge, TextInput } from '@mantine/core';
-import { Trash, Pencil } from 'lucide-react';
+import { ArrowLeft, Trash, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
 export default function PostnatalTab({
@@ -21,6 +21,7 @@ export default function PostnatalTab({
   cancelEditPncContact,
   postpartumProgress,
   cancelEditPostpartumLog,
+  prevTab,
 }) {
   const pncContacts = formData.pnc_contacts || [];
   const pncCount = pncContacts.length;
@@ -148,6 +149,11 @@ export default function PostnatalTab({
             </Grid>
           </Stack>
         </Paper>
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <Group justify="flex-start" mt="md">
+          <Button variant="default" leftSection={<ArrowLeft size={16} />} onClick={() => prevTab('delivery')}>Previous</Button>
+        </Group>
       </Grid.Col>
     </Grid>
   );
