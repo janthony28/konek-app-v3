@@ -40,14 +40,12 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
             <TextInput label="AOG" readOnly value={newVisit.aog} placeholder="Auto" />
             <TextInput label="Trimester" readOnly value={newVisit.trimester} placeholder="Auto" />
           </Group>
-          {newVisit.trimester === '1st Trimester' && (
-            <Grid>
-              <Grid.Col span={3}> <NumberInput label="Ht (cm)" value={newVisit.height} onChange={(val) => handleBMIChange('height', val)} /> </Grid.Col>
-              <Grid.Col span={3}> <NumberInput label="Wt (kg)" value={newVisit.weight} onChange={(val) => handleBMIChange('weight', val)} /> </Grid.Col>
-              <Grid.Col span={3}> <TextInput label="BMI" readOnly value={newVisit.bmi} /> </Grid.Col>
-              <Grid.Col span={3}> <TextInput label="Category" readOnly value={newVisit.bmi_category} /> </Grid.Col>
-            </Grid>
-          )}
+          <Grid>
+            <Grid.Col span={3}> <NumberInput label="Ht (cm)" value={newVisit.height} onChange={(val) => handleBMIChange('height', val)} /> </Grid.Col>
+            <Grid.Col span={3}> <NumberInput label="Wt (kg)" value={newVisit.weight} onChange={(val) => handleBMIChange('weight', val)} /> </Grid.Col>
+            <Grid.Col span={3}> <TextInput label="BMI" readOnly value={newVisit.bmi} /> </Grid.Col>
+            <Grid.Col span={3}> <TextInput label="Category" readOnly value={newVisit.bmi_category} /> </Grid.Col>
+          </Grid>
           <Group gap="xs">
             <Button flex={1} variant="outline" color="teal" onClick={addVisitToList}>{editingVisitIndex != null ? `Update Visit (${editingVisitIndex + 1} of ${formData.prenatal_visits.length})` : '+ Add Visit'}</Button>
             {editingVisitIndex != null && <Button variant="subtle" color="gray" onClick={cancelEditVisit}>Cancel</Button>}
@@ -68,7 +66,7 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
                     <Table.Td>{formatDate(v.date)}</Table.Td>
                     <Table.Td>{v.aog}</Table.Td>
                     <Table.Td>{v.trimester || '—'}</Table.Td>
-                    <Table.Td>{v.trimester === '1st Trimester' ? (v.bmi ?? '—') : '—'}</Table.Td>
+                    <Table.Td>{v.bmi ?? '—'}</Table.Td>
                     <Table.Td>
                       <Group gap="xs">
                         <ActionIcon color="blue" size="sm" variant="light" onClick={() => startEditVisit(i)} title="Edit"><Pencil size={14} /></ActionIcon>

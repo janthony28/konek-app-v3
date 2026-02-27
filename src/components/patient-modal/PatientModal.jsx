@@ -126,11 +126,10 @@ export default function PatientModal({
       {(() => {
         const visits = formData.prenatal_visits || [];
         const latestVisit = visits.length ? visits[visits.length - 1] : {};
-        const hasHighBmi = latestVisit.bmi_category === 'HIGH';
         const hasLabPositive = (formData.lab_logs || []).some(
           (log) => log.result === 'With Anemia' || log.result === 'Positive'
         );
-        const isHighRisk = formData.manual_risk || hasHighBmi || hasLabPositive;
+        const isHighRisk = formData.manual_risk || hasLabPositive;
         return (
           <Button fullWidth mt="lg" onClick={handleSubmit} color={isHighRisk ? 'red' : 'teal'} size="md" loading={submitting} disabled={submitting}>
             {isEditing ? 'Update Record' : (isHighRisk ? 'Save High Risk Record' : 'Save Normal Record')}

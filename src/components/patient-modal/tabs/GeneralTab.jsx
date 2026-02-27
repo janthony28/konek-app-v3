@@ -248,6 +248,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                 { key: 'has_advanced_maternal_age', label: 'Advanced maternal age' },
                 { key: 'has_multiple_gestation', label: 'Multiple gestation (twins, etc.)' },
                 { key: 'has_multiple_miscarriages', label: 'Multiple miscarriages' },
+                { key: 'has_obesity', label: 'Obesity' },
               ].map(({ key, label }) => (
                 <Checkbox
                   key={key}

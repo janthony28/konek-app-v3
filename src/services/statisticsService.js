@@ -14,7 +14,7 @@ const HIGH_RISK_REASON_FLAGS = [
   ['has_advanced_maternal_age', 'Advanced Maternal Age'],
   ['has_multiple_gestation', 'Multiple Gestation'],
   ['has_multiple_miscarriages', 'History of Multiple Miscarriages'],
-  ['has_high_bmi', 'Obesity'],
+  ['has_obesity', 'Obesity'],
 ];
 
 /* Lab type → statistics reason label mapping */

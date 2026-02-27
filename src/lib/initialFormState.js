@@ -46,6 +46,7 @@ export function getInitialFormState() {
     has_multiple_gestation: false,
     has_multiple_miscarriages: false,
     has_high_bmi: false,
+    has_obesity: false,
     has_lab_positive: false,
     manual_risk: false,
     is_high_risk: false,

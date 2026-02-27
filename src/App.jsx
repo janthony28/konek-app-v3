@@ -815,16 +815,15 @@ function MainApp({ session, onLogout }) {
       };
       const ifaCompletionDate = getIfaCompletionDate(formData.postpartum_logs);
 
-      // Auto-detect high-risk from BMI and lab results
-      const hasHighBmi = latest.bmi_category === 'HIGH';
+      // Auto-detect high-risk from lab results
       const hasLabPositive = (formData.lab_logs || []).some(
         (log) => log.result === 'With Anemia' || log.result === 'Positive'
       );
 
       const rawPayload = {
         ...formData,
-        is_high_risk: formData.manual_risk || hasHighBmi || hasLabPositive,
-        has_high_bmi: hasHighBmi,
+        is_high_risk: formData.manual_risk || hasLabPositive,
+        has_high_bmi: false,
         has_lab_positive: hasLabPositive,
         height: latest.height || null,
         weight: latest.weight || null,
