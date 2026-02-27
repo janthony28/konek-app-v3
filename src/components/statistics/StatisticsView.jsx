@@ -380,7 +380,7 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
       <Grid>
         {/* ── Solo Parent ── */}
         <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="Solo Parent" subtitle="Hover on Yes for type breakdown" icon={<UserCheck size={16} />} onExport={() => handleExport('Solo Parent', gd.soloParent?.records)}>
+          <ChartPaper title="Solo Parent" subtitle="Yes vs No" icon={<UserCheck size={16} />} onExport={() => handleExport('Solo Parent', gd.soloParent?.records)}>
             <ResponsiveContainer>
               <PieChart>
                 <Pie
@@ -398,7 +398,7 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
                     <Cell key={entry.name} fill={soloColors[i % soloColors.length]} />
                   ))}
                 </Pie>
-                <Tooltip content={<SubBreakdownTooltip breakdownMap={gd.soloParent?.byType} targetSliceName="Yes" />} />
+                <Tooltip content={<SimplePieTooltip />} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

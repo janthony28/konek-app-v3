@@ -71,67 +71,15 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                 <Checkbox
                   label="Yes"
                   checked={formData.is_solo_parent === true}
-                  onChange={(e) => {
-                    const checked = e.currentTarget.checked;
-                    setFormData({
-                      ...formData,
-                      is_solo_parent: checked,
-                      ...(checked ? {} : {
-                        solo_parent_type: '',
-                        solo_parent_other: '',
-                      }),
-                    });
-                  }}
+                  onChange={(e) => setFormData({ ...formData, is_solo_parent: e.currentTarget.checked ? true : null })}
                 />
                 <Checkbox
                   label="No"
                   checked={formData.is_solo_parent === false}
-                  onChange={(e) => {
-                    const checked = e.currentTarget.checked;
-                    if (checked) {
-                      setFormData({
-                        ...formData,
-                        is_solo_parent: false,
-                        solo_parent_type: '',
-                        solo_parent_other: '',
-                      });
-                    }
-                  }}
+                  onChange={(e) => setFormData({ ...formData, is_solo_parent: e.currentTarget.checked ? false : null })}
                 />
               </Group>
             </Input.Wrapper>
-            {formData.is_solo_parent === true && (
-              <Stack mt="xs" gap="xs" pl="md">
-                <Select
-                  label="Solo parent type"
-                  placeholder="Select one"
-                  clearable
-                  data={[
-                    { value: 'unmarried', label: 'Unmarried' },
-                    { value: 'separated', label: 'Separated (not legally married / abandoned)' },
-                    { value: 'legally_separated', label: 'Legally separated' },
-                    { value: 'widow', label: 'Widow' },
-                    { value: 'incarcerated', label: 'Spouse incarcerated' },
-                    { value: 'disability', label: 'Spouse with disability / unable to provide support' },
-                    { value: 'others', label: 'Others (pls. specify)' },
-                  ]}
-                  value={formData.solo_parent_type || null}
-                  onChange={(val) => setFormData({
-                    ...formData,
-                    solo_parent_type: val || '',
-                    solo_parent_other: val !== 'others' ? '' : (formData.solo_parent_other || ''),
-                  })}
-                />
-                {(formData.solo_parent_type || '') === 'others' && (
-                  <TextInput
-                    label="Please specify"
-                    placeholder="Specify..."
-                    value={formData.solo_parent_other || ''}
-                    onChange={(e) => setFormData({ ...formData, solo_parent_other: e.target.value })}
-                  />
-                )}
-              </Stack>
-            )}
           </Grid.Col>
 
           <Grid.Col span={12}>

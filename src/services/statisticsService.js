@@ -1,16 +1,5 @@
 import { supabase } from '../supabaseClient';
 
-/* ── Solo-parent type labels (match GeneralTab select values) ─────────── */
-const SOLO_PARENT_TYPE_LABELS = {
-  unmarried: 'Unmarried',
-  separated: 'Separated',
-  legally_separated: 'Legally separated',
-  widow: 'Widow',
-  incarcerated: 'Spouse incarcerated',
-  disability: 'Spouse with disability',
-  others: 'Others',
-};
-
 /* ── PhilHealth type labels ───────────────────────────────────────────── */
 const PHILHEALTH_TYPE_LABELS = {
   formal: 'Formal Economy',
@@ -147,9 +136,7 @@ export function buildMaternalStatistics(records) {
 
   // ── General Data counters + record lists ──
   let soloYes = 0, soloNo = 0, soloUnknown = 0;
-  const soloByType = {};
   const soloEntries = new Map();
-  const soloTypeEntries = new Map();
 
   let phMember = 0, phDependent = 0, phNotMember = 0, phUnknown = 0;
   const phByType = {};
@@ -185,12 +172,6 @@ export function buildMaternalStatistics(records) {
     if (record.is_solo_parent === true) {
       soloYes += 1;
       pushEntry(soloEntries, 'Yes', record);
-      const spType = String(record.solo_parent_type || '').trim().toLowerCase();
-      if (spType) {
-        const label = SOLO_PARENT_TYPE_LABELS[spType] || spType;
-        soloByType[label] = (soloByType[label] || 0) + 1;
-        pushEntry(soloTypeEntries, label, record);
-      }
     } else if (record.is_solo_parent === false) {
       soloNo += 1;
       pushEntry(soloEntries, 'No', record);
@@ -276,9 +257,7 @@ export function buildMaternalStatistics(records) {
     generalData: {
       soloParent: {
         yes: soloYes, no: soloNo, unknown: soloUnknown,
-        byType: soloByType,
         records: mapToObj(soloEntries),
-        typeRecords: mapToObj(soloTypeEntries),
       },
       philhealth: {
         member: phMember, dependent: phDependent, notMember: phNotMember, unknown: phUnknown,
