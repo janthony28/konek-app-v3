@@ -20,6 +20,7 @@ const HIGH_RISK_REASON_FLAGS = [
 /* Lab type → statistics reason label mapping */
 const LAB_REASON_LABELS = {
   CBC: 'Anemia',
+  Urinalysis: 'UTI',
   'Gestational Diabetes': 'Gestational Diabetes',
   Syphilis: 'Syphilis',
   HIV: 'HIV',
@@ -95,7 +96,7 @@ function collectRiskReasons(record) {
   const labLogs = Array.isArray(record?.lab_logs) ? record.lab_logs : [];
   const addedLabReasons = new Set();
   for (const log of labLogs) {
-    const isBad = log.result === 'With Anemia' || log.result === 'Positive';
+    const isBad = log.result === 'With Anemia' || log.result === 'Positive' || log.result === 'With UTI';
     if (isBad && log.type && LAB_REASON_LABELS[log.type] && !addedLabReasons.has(log.type)) {
       reasons.push(LAB_REASON_LABELS[log.type]);
       addedLabReasons.add(log.type);

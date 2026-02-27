@@ -192,7 +192,7 @@ function MainApp({ session, onLogout }) {
   const [formData, setFormData] = useState(initialFormState);
   const [newVisit, setNewVisit] = useState({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
   const [newSupp, setNewSupp] = useState({ type: 'IFA', date: '', count: '' });
-  const [newLab, setNewLab] = useState({ type: 'CBC', date: '', result: '' });
+  const [newLab, setNewLab] = useState({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
   const [newPostpartumLog, setNewPostpartumLog] = useState({ date: '', count: '', remarks: '' });
   const [editingVisitIndex, setEditingVisitIndex] = useState(null);
   const [editingSupp, setEditingSupp] = useState(null); // { type: 'IFA'|'MMS', index }
@@ -547,20 +547,20 @@ function MainApp({ session, onLogout }) {
     } else {
       setFormData({ ...formData, lab_logs: [...logs, newLab] });
     }
-    setNewLab({ type: newLab.type, date: '', result: '' });
+    setNewLab({ type: newLab.type, date: '', result: '', hemoglobin: '', remarks: '' });
   };
   const removeLabLog = (index) => {
     setFormData({ ...formData, lab_logs: formData.lab_logs.filter((_, i) => i !== index) });
-    if (editingLabIndex === index) { setEditingLabIndex(null); setNewLab({ type: newLab.type, date: '', result: '' }); }
+    if (editingLabIndex === index) { setEditingLabIndex(null); setNewLab({ type: newLab.type, date: '', result: '', hemoglobin: '', remarks: '' }); }
   };
   const startEditLabLog = (index) => {
     const log = (formData.lab_logs || [])[index] || {};
-    setNewLab({ type: log.type || 'CBC', date: log.date || '', result: log.result || '' });
+    setNewLab({ type: log.type || 'CBC', date: log.date || '', result: log.result || '', hemoglobin: log.hemoglobin || '', remarks: log.remarks || '' });
     setEditingLabIndex(index);
   };
   const cancelEditLabLog = () => {
     setEditingLabIndex(null);
-    setNewLab({ type: newLab.type || 'CBC', date: '', result: '' });
+    setNewLab({ type: newLab.type || 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
   };
 
   const getIfaCompletionDate = (logList) => {
@@ -707,7 +707,7 @@ function MainApp({ session, onLogout }) {
     setEditingPncContactIndex(null);
     setNewSupp({ type: 'IFA', date: '', count: '' });
     setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
-    setNewLab({ type: 'CBC', date: '', result: '' });
+    setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
     setNewPncContact({ date: '' });
     open();
@@ -751,7 +751,7 @@ function MainApp({ session, onLogout }) {
     setEditingPncContactIndex(null);
     setNewSupp({ type: 'IFA', date: '', count: '' });
     setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
-    setNewLab({ type: 'CBC', date: '', result: '' });
+    setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
     setNewPncContact({ date: '' });
     open();
@@ -817,7 +817,7 @@ function MainApp({ session, onLogout }) {
 
       // Auto-detect high-risk from lab results
       const hasLabPositive = (formData.lab_logs || []).some(
-        (log) => log.result === 'With Anemia' || log.result === 'Positive'
+        (log) => log.result === 'With Anemia' || log.result === 'Positive' || log.result === 'With UTI'
       );
 
       const rawPayload = {

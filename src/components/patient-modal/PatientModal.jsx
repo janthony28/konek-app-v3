@@ -127,7 +127,7 @@ export default function PatientModal({
         const visits = formData.prenatal_visits || [];
         const latestVisit = visits.length ? visits[visits.length - 1] : {};
         const hasLabPositive = (formData.lab_logs || []).some(
-          (log) => log.result === 'With Anemia' || log.result === 'Positive'
+          (log) => log.result === 'With Anemia' || log.result === 'Positive' || log.result === 'With UTI'
         );
         const isHighRisk = formData.manual_risk || hasLabPositive;
         return (

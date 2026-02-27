@@ -1,11 +1,27 @@
-import { Paper, Box, Stack, Group, Grid, Input, NumberInput, TextInput, Table, Button, ActionIcon, Text } from '@mantine/core';
-import { ArrowLeft, ArrowRight, Trash, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { Paper, Box, Stack, Group, Grid, Input, NumberInput, TextInput, Table, Button, ActionIcon, Text, Modal } from '@mantine/core';
+import { ArrowLeft, ArrowRight, Trash, Pencil, Plus } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
 const isEditing = (editingVisitIndex) => editingVisitIndex != null;
 
 export default function PrenatalTab({ formData, setFormData, newVisit, setNewVisit, handleVisitDateChange, handleBMIChange, addVisitToList, removeVisit, editingVisitIndex, startEditVisit, cancelEditVisit, nextTab, prevTab }) {
   const editing = isEditing(editingVisitIndex);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleAddClick = () => {
+    if (editing) {
+      addVisitToList();
+    } else {
+      setConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmYes = () => {
+    setConfirmOpen(false);
+    addVisitToList();
+  };
+
   return (
     <>
       <style>{`
@@ -47,9 +63,26 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
             <Grid.Col span={3}> <TextInput label="Category" readOnly value={newVisit.bmi_category} /> </Grid.Col>
           </Grid>
           <Group gap="xs">
-            <Button flex={1} variant="outline" color="teal" onClick={addVisitToList}>{editingVisitIndex != null ? `Update Visit (${editingVisitIndex + 1} of ${formData.prenatal_visits.length})` : '+ Add Visit'}</Button>
-            {editingVisitIndex != null && <Button variant="subtle" color="gray" onClick={cancelEditVisit}>Cancel</Button>}
+            <Button
+              flex={1}
+              variant={editing ? 'outline' : 'filled'}
+              color={editing ? 'green' : 'green'}
+              size="md"
+              leftSection={!editing && <Plus size={16} />}
+              onClick={handleAddClick}
+            >
+              {editing ? `Update Visit (${editingVisitIndex + 1} of ${formData.prenatal_visits.length})` : 'Add Visit'}
+            </Button>
+            {editing && <Button variant="subtle" color="gray" size="md" onClick={cancelEditVisit}>Cancel</Button>}
           </Group>
+
+          <Modal opened={confirmOpen} onClose={() => setConfirmOpen(false)} title="Confirm" centered size="sm" withCloseButton={false}>
+            <Text size="sm" fw={500} mb="md">Add this visit?</Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setConfirmOpen(false)}>No</Button>
+              <Button color="green" onClick={handleConfirmYes}>Yes</Button>
+            </Group>
+          </Modal>
         </Stack>
       </Paper>
       <Paper withBorder radius="md" overflow="hidden">

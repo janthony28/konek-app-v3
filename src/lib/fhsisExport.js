@@ -535,8 +535,12 @@ export async function exportMaternalTcl(patients, options = {}) {
     { header: 'Hep B Result\n1=reactive, 0=neg', key: 'hepbResult', width: 16, group: 'lab' },
     { header: 'CBC Date', key: 'cbcDate', width: 14, group: 'lab' },
     { header: 'CBC Result\n1=with anemia,\n0=without', key: 'cbcResult', width: 16, group: 'lab' },
+    { header: 'CBC Hemoglobin\n(g/dL)', key: 'cbcHemoglobin', width: 16, group: 'lab' },
     { header: 'GDM\nScreen Date', key: 'gdmDate', width: 14, group: 'lab' },
     { header: 'GDM Result\n1=pos, 0=neg', key: 'gdmResult', width: 14, group: 'lab' },
+    { header: 'Urinalysis\nScreen Date', key: 'urinalysisDate', width: 14, group: 'lab' },
+    { header: 'Urinalysis Result\n1=with UTI,\n0=no UTI', key: 'urinalysisResult', width: 16, group: 'lab' },
+    { header: 'Urinalysis\nRemarks', key: 'urinalysisRemarks', width: 20, group: 'lab' },
     // Delivery Information (45-58)
     { header: 'Date Terminated\n(mm/dd/yy)', key: 'deliveryDate', width: 16, group: 'delivery' },
     { header: 'Outcome\nFT=Full term,\nPT=Pre-term,\nFD=Fetal death,\nAB=Abortion', key: 'deliveryOutcome', width: 18, group: 'delivery' },
@@ -676,12 +680,14 @@ export async function exportMaternalTcl(patients, options = {}) {
     const hepb = getLabEntry(labLogs, 'Hep B');
     const cbc = getLabEntry(labLogs, 'CBC');
     const gdm = getLabEntry(labLogs, 'Gestational Diabetes');
+    const urinalysis = getLabEntry(labLogs, 'Urinalysis');
 
     const isSyphilisPos = syphilis?.result === 'Positive' || p.lab_syphilis_result === 'Reactive';
     const isHivPos = hiv?.result === 'Positive' || p.lab_hiv_result === 'Reactive';
     const isHepbPos = hepb?.result === 'Positive' || p.lab_hepb_result === 'Reactive';
     const isCbcAnemia = cbc?.result === 'With Anemia' || p.lab_cbc_result === 'With Anemia';
     const isGdmPos = gdm?.result === 'Positive' || p.lab_diabetes_result === 'Positive';
+    const isUrinalysisUti = urinalysis?.result === 'With UTI';
 
     const is4PncCompleted = p.is_4pnc_completed === 'Yes' || p.is_4pnc_completed === true || p.is_4pnc_completed === 'true';
 
@@ -728,8 +734,12 @@ export async function exportMaternalTcl(patients, options = {}) {
       hepbResult: isHepbPos ? 1 : (hepb ? 0 : ''),
       cbcDate: cbc?.date || '',
       cbcResult: isCbcAnemia ? 1 : (cbc ? 0 : ''),
+      cbcHemoglobin: cbc?.hemoglobin || '',
       gdmDate: gdm?.date || '',
       gdmResult: isGdmPos ? 1 : (gdm ? 0 : ''),
+      urinalysisDate: urinalysis?.date || '',
+      urinalysisResult: isUrinalysisUti ? 1 : (urinalysis ? 0 : ''),
+      urinalysisRemarks: urinalysis?.remarks || '',
       deliveryDate: p.delivery_date || '',
       deliveryOutcome: p.delivery_outcome || '',
       deliveryMode: p.delivery_mode || '',
