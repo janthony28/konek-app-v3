@@ -496,6 +496,7 @@ export async function exportMaternalTcl(patients, options = {}) {
     { header: 'Age Group\nA=10-14, B=15-19,\nC=20-49 y.o.', key: 'ageGroup', width: 14, group: 'demo' },
     { header: 'Civil Status', key: 'civilStatus', width: 14, group: 'demo' },
     { header: 'Solo Parent\n1=Yes, 0=No', key: 'soloParent', width: 12, group: 'demo' },
+    { header: '4Ps Member\n1=Yes, 0=No', key: 'fourPsMember', width: 12, group: 'demo' },
     { header: 'PhilHealth Member\nM=Member,\nD=Dependent,\nN=Not a member', key: 'philhealthMember', width: 18, group: 'demo' },
     { header: 'SSS Member\n1=Yes, 0=No', key: 'sssMember', width: 12, group: 'demo' },
     { header: 'GSIS Member\n1=Yes, 0=No', key: 'gsisMember', width: 12, group: 'demo' },
@@ -698,6 +699,7 @@ export async function exportMaternalTcl(patients, options = {}) {
       ageGroup: getAgeGroup(ageNum),
       civilStatus: p.civil_status || '',
       soloParent: p.is_solo_parent === true ? 1 : (p.is_solo_parent === false ? 0 : ''),
+      fourPsMember: p.is_4ps_member === true ? 1 : (p.is_4ps_member === false ? 0 : ''),
       philhealthMember: (() => {
         const s = String(p.philhealth_status || '').trim();
         if (s === 'Member') return 'M';
@@ -754,7 +756,6 @@ export async function exportMaternalTcl(patients, options = {}) {
     const rowNum = row.number;
     const isEven = idx % 2 === 1;
 
-    row.height = 18;
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       cell.font = dataFont;
       cell.border = thinBorder;

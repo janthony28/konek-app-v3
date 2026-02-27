@@ -197,6 +197,14 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   if (gd.soloParent?.unknown) soloParentData.push({ name: 'Unknown', value: gd.soloParent.unknown });
   const soloColors = gd.soloParent?.unknown ? [COLORS.green, COLORS.orange, COLORS.gray] : PIE_YES_NO;
 
+  // 4Ps Member
+  const fourPsData = [
+    { name: 'Yes', value: gd.fourPs?.yes || 0 },
+    { name: 'No', value: gd.fourPs?.no || 0 },
+  ];
+  if (gd.fourPs?.unknown) fourPsData.push({ name: 'Unknown', value: gd.fourPs.unknown });
+  const fourPsColors = gd.fourPs?.unknown ? [COLORS.green, COLORS.orange, COLORS.gray] : PIE_YES_NO;
+
   // PhilHealth
   const philhealthData = [
     { name: 'Member', value: gd.philhealth?.member || 0 },
@@ -396,6 +404,33 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
                 >
                   {soloParentData.map((entry, i) => (
                     <Cell key={entry.name} fill={soloColors[i % soloColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<SimplePieTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── 4Ps Member ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper title="4Ps Member" subtitle="Yes vs No" icon={<UserCheck size={16} />} onExport={() => handleExport('4Ps Member', gd.fourPs?.records)}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={fourPsData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  label={renderPercentLabel}
+                  onClick={onPieClick(gd.fourPs?.records, '4Ps Member')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {fourPsData.map((entry, i) => (
+                    <Cell key={entry.name} fill={fourPsColors[i % fourPsColors.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<SimplePieTooltip />} />

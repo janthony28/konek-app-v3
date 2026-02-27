@@ -138,6 +138,9 @@ export function buildMaternalStatistics(records) {
   let soloYes = 0, soloNo = 0, soloUnknown = 0;
   const soloEntries = new Map();
 
+  let fourPsYes = 0, fourPsNo = 0, fourPsUnknown = 0;
+  const fourPsEntries = new Map();
+
   let phMember = 0, phDependent = 0, phNotMember = 0, phUnknown = 0;
   const phByType = {};
   const phEntries = new Map();
@@ -178,6 +181,18 @@ export function buildMaternalStatistics(records) {
     } else {
       soloUnknown += 1;
       pushEntry(soloEntries, 'Unknown', record);
+    }
+
+    /* ─ 4Ps Member ─ */
+    if (record.is_4ps_member === true) {
+      fourPsYes += 1;
+      pushEntry(fourPsEntries, 'Yes', record);
+    } else if (record.is_4ps_member === false) {
+      fourPsNo += 1;
+      pushEntry(fourPsEntries, 'No', record);
+    } else {
+      fourPsUnknown += 1;
+      pushEntry(fourPsEntries, 'Unknown', record);
     }
 
     /* ─ PhilHealth ─ */
@@ -258,6 +273,10 @@ export function buildMaternalStatistics(records) {
       soloParent: {
         yes: soloYes, no: soloNo, unknown: soloUnknown,
         records: mapToObj(soloEntries),
+      },
+      fourPs: {
+        yes: fourPsYes, no: fourPsNo, unknown: fourPsUnknown,
+        records: mapToObj(fourPsEntries),
       },
       philhealth: {
         member: phMember, dependent: phDependent, notMember: phNotMember, unknown: phUnknown,

@@ -83,6 +83,23 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
+            <Input.Wrapper label="4Ps Member">
+              <Group mt="xs" gap="md">
+                <Checkbox
+                  label="Yes"
+                  checked={formData.is_4ps_member === true}
+                  onChange={(e) => setFormData({ ...formData, is_4ps_member: e.currentTarget.checked ? true : null })}
+                />
+                <Checkbox
+                  label="No"
+                  checked={formData.is_4ps_member === false}
+                  onChange={(e) => setFormData({ ...formData, is_4ps_member: e.currentTarget.checked ? false : null })}
+                />
+              </Group>
+            </Input.Wrapper>
+          </Grid.Col>
+
+          <Grid.Col span={12}>
             <Input.Wrapper label="PhilHealth Member">
               <Group mt="xs" gap="md">
                 <Checkbox

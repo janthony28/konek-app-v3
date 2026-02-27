@@ -89,6 +89,7 @@ export function getInitialFormState() {
     // General Data fields
     civil_status: '',
     is_solo_parent: null,
+    is_4ps_member: null,
     philhealth_status: '',
     philhealth_type: '',
     sss_member: null,
