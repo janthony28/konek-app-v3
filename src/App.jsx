@@ -316,26 +316,16 @@ function MainApp({ session, onLogout }) {
     if (val !== '' && val !== undefined && val !== null) { category = val >= 2500 ? 'Normal' : 'Low'; }
 
     setFormData((prev) => {
-      // Determine how many babies should be represented based on pregnancy type
-      const type = prev.pregnancy_type;
-      const multipleCount = Number(prev.pregnancy_multiple_count) || 0;
-      let desiredCount = 1;
-      if (type === 'Twins') desiredCount = 2;
-      else if (type === 'Multiple' && multipleCount > 0) desiredCount = Math.min(multipleCount, 12);
-
       const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
-      while (existing.length < desiredCount) existing.push({ weight: '', category: '', sex: '' });
+      // Ensure the array is long enough
+      while (existing.length <= index) existing.push({ weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' });
 
-      const updated = [...existing];
-      const current = updated[index] || { weight: '', category: '', sex: '' };
-      updated[index] = { ...current, weight: val, category };
+      const current = existing[index] || { weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' };
+      existing[index] = { ...current, weight: val, category };
 
-      const next = {
-        ...prev,
-        baby_details: updated,
-      };
+      const next = { ...prev, baby_details: existing };
 
-      // Keep legacy single-baby fields in sync with Baby 1 for reporting / backward compatibility
+      // Keep legacy single-baby fields in sync with Baby 1
       if (index === 0) {
         next.birth_weight = val;
         next.birth_weight_category = category;
@@ -347,28 +337,52 @@ function MainApp({ session, onLogout }) {
 
   const handleBabySexChange = (val, index = 0) => {
     setFormData((prev) => {
-      const type = prev.pregnancy_type;
-      const multipleCount = Number(prev.pregnancy_multiple_count) || 0;
-      let desiredCount = 1;
-      if (type === 'Twins') desiredCount = 2;
-      else if (type === 'Multiple' && multipleCount > 0) desiredCount = Math.min(multipleCount, 12);
-
       const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
-      while (existing.length < desiredCount) existing.push({ weight: '', category: '', sex: '' });
+      while (existing.length <= index) existing.push({ weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' });
 
-      const updated = [...existing];
-      const current = updated[index] || { weight: '', category: '', sex: '' };
-      updated[index] = { ...current, sex: val };
+      const current = existing[index] || { weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' };
+      existing[index] = { ...current, sex: val };
 
-      const next = {
-        ...prev,
-        baby_details: updated,
-      };
+      const next = { ...prev, baby_details: existing };
+      if (index === 0) { next.birth_sex = val; }
+      return next;
+    });
+  };
 
-      if (index === 0) {
-        next.birth_sex = val;
-      }
+  const handleBabyFieldChange = (index, field, value) => {
+    setFormData((prev) => {
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+      while (existing.length <= index) existing.push({ weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' });
+      existing[index] = { ...existing[index], [field]: value };
 
+      const next = { ...prev, baby_details: existing };
+      // Sync root-level fields from Baby 1
+      if (index === 0 && field === 'delivery_date') next.delivery_date = value;
+      if (index === 0 && field === 'delivery_time') next.delivery_time = value;
+      return next;
+    });
+  };
+
+  const addBaby = () => {
+    setFormData((prev) => {
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+      if (existing.length >= 12) return prev;
+      return { ...prev, baby_details: [...existing, { weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' }] };
+    });
+  };
+
+  const removeBaby = (index) => {
+    setFormData((prev) => {
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+      const updated = existing.filter((_, i) => i !== index);
+      const next = { ...prev, baby_details: updated };
+      // Re-sync legacy fields from new Baby 1 (or clear if empty)
+      const baby1 = updated[0] || {};
+      next.birth_weight = baby1.weight || '';
+      next.birth_weight_category = baby1.category || '';
+      next.birth_sex = baby1.sex || '';
+      next.delivery_date = baby1.delivery_date || prev.delivery_date || '';
+      next.delivery_time = baby1.delivery_time || prev.delivery_time || '';
       return next;
     });
   };
@@ -721,6 +735,27 @@ function MainApp({ session, onLogout }) {
       else cleanData[key] = patient[key];
     });
     cleanData.baby_details = Array.isArray(patient.baby_details) ? patient.baby_details : (cleanData.baby_details || []);
+    // Normalize baby_details: ensure each entry has delivery_date & delivery_time fields
+    if (cleanData.baby_details.length > 0) {
+      cleanData.baby_details = cleanData.baby_details.map((b, i) => ({
+        weight: b.weight || '',
+        category: b.category || '',
+        sex: b.sex || '',
+        delivery_date: b.delivery_date || (i === 0 ? (patient.delivery_date || '') : ''),
+        delivery_time: b.delivery_time || (i === 0 ? (patient.delivery_time || '') : ''),
+        status: b.status || 'Live Birth',
+      }));
+    } else if (patient.delivery_date || patient.birth_weight || patient.birth_sex) {
+      // Legacy record with no baby_details array — migrate root-level data to Baby 1
+      cleanData.baby_details = [{
+        weight: patient.birth_weight || '',
+        category: patient.birth_weight_category || '',
+        sex: patient.birth_sex || '',
+        delivery_date: patient.delivery_date || '',
+        delivery_time: patient.delivery_time || '',
+        status: 'Live Birth',
+      }];
+    }
     cleanData.pnc_contacts = [patient.pnc_date_1, patient.pnc_date_2, patient.pnc_date_3, patient.pnc_date_4]
       .filter(Boolean)
       .map((date) => ({ date }));
@@ -851,9 +886,25 @@ function MainApp({ session, onLogout }) {
 
       // Persist baby_details for reporting; empty for non–live births
       const isLiveBirth = ['FT', 'PT'].includes(formData.delivery_outcome);
-      rawPayload.baby_details = isLiveBirth && Array.isArray(formData.baby_details) && formData.baby_details.length > 0
+      const finalBabies = isLiveBirth && Array.isArray(formData.baby_details) && formData.baby_details.length > 0
         ? formData.baby_details
         : [];
+      rawPayload.baby_details = finalBabies;
+
+      // Auto-derive pregnancy type from number of babies
+      const babyLen = finalBabies.length;
+      if (babyLen <= 1) { rawPayload.pregnancy_type = 'Singleton'; rawPayload.pregnancy_multiple_count = ''; }
+      else if (babyLen === 2) { rawPayload.pregnancy_type = 'Twins'; rawPayload.pregnancy_multiple_count = ''; }
+      else { rawPayload.pregnancy_type = 'Multiple'; rawPayload.pregnancy_multiple_count = babyLen; }
+
+      // Sync root-level delivery_date/delivery_time from Baby 1 for backward compat
+      const baby1 = finalBabies[0] || {};
+      if (baby1.delivery_date) rawPayload.delivery_date = baby1.delivery_date;
+      if (baby1.delivery_time) rawPayload.delivery_time = baby1.delivery_time;
+      // Sync legacy birth fields from Baby 1
+      if (baby1.weight != null && baby1.weight !== '') rawPayload.birth_weight = baby1.weight;
+      if (baby1.category) rawPayload.birth_weight_category = baby1.category;
+      if (baby1.sex) rawPayload.birth_sex = baby1.sex;
 
       if (formData.delivery_place === 'Others') {
         rawPayload.delivery_non_health_facility = formData.delivery_non_health_facility || null;
@@ -999,6 +1050,9 @@ function MainApp({ session, onLogout }) {
         cancelEditPncContact={cancelEditPncContact}
         handleBirthWeightChange={handleBirthWeightChange}
         handleBabySexChange={handleBabySexChange}
+        handleBabyFieldChange={handleBabyFieldChange}
+        addBaby={addBaby}
+        removeBaby={removeBaby}
         totalIFA={totalIFA}
         totalMMS={totalMMS}
         ifaProgress={ifaProgress}

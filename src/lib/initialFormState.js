@@ -63,6 +63,7 @@ export function getInitialFormState() {
     birth_weight_category: '',
     birth_sex: '',
     // Structured baby details (persisted for multi-baby reporting)
+    // Each entry: { weight, category, sex, delivery_date, delivery_time }
     baby_details: [],
     delivery_mode: '',
     delivery_attendant: '',

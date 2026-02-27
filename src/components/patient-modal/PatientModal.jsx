@@ -65,6 +65,9 @@ export default function PatientModal({
   cancelEditPncContact,
   handleBirthWeightChange,
   handleBabySexChange,
+  handleBabyFieldChange,
+  addBaby,
+  removeBaby,
   allowedBarangays,
   totalIFA,
   totalMMS,
@@ -113,6 +116,9 @@ export default function PatientModal({
             formErrors={formErrors}
             handleBirthWeightChange={handleBirthWeightChange}
             handleBabySexChange={handleBabySexChange}
+            handleBabyFieldChange={handleBabyFieldChange}
+            addBaby={addBaby}
+            removeBaby={removeBaby}
             isAborted={isAborted}
             nextTab={nextTab}
             prevTab={prevTab}

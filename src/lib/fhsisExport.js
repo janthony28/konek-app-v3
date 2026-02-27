@@ -130,9 +130,11 @@ export async function exportToExcel(patients, options = {}) {
         const isLiveBirth = ['FT', 'PT'].includes(p.delivery_outcome);
         const babies = isLiveBirth && Array.isArray(p.baby_details) && p.baby_details.length > 0
           ? p.baby_details
-          : isLiveBirth ? [{ category: p.birth_weight_category || '', sex: p.birth_sex || '' }] : [];
-        for (let i = 0; i < babies.length; i++) inc('liveBirths');
-        babies.forEach((b) => {
+          : isLiveBirth ? [{ category: p.birth_weight_category || '', sex: p.birth_sex || '', status: 'Live Birth' }] : [];
+        // Count per-baby: only 'Live Birth' status babies count as live births
+        const liveBabies = babies.filter((b) => (b.status || 'Live Birth') === 'Live Birth');
+        for (let i = 0; i < liveBabies.length; i++) inc('liveBirths');
+        liveBabies.forEach((b) => {
           const cat = (b.category === 'Normal' || b.category === 'Low') ? b.category : 'Unknown';
           const sex = b.sex === 'Male' ? 'Male' : (b.sex === 'Female' ? 'Female' : null);
           if (cat === 'Normal') inc('lb_normal');
@@ -141,6 +143,9 @@ export async function exportToExcel(patients, options = {}) {
           if (cat === 'Unknown' && sex === 'Male') inc('lb_unknown_m');
           if (cat === 'Unknown' && sex === 'Female') inc('lb_unknown_f');
         });
+        // Count per-baby fetal deaths (from mixed outcomes like twins)
+        const fetalDeathBabies = babies.filter((b) => b.status === 'Fetal Death');
+        if (fetalDeathBabies.length > 0 || p.delivery_outcome === 'FD') inc('outcome_fd');
         if (p.delivery_attendant === 'MD') inc('attendant_md');
         if (p.delivery_attendant === 'RN') inc('attendant_rn');
         if (p.delivery_attendant === 'MW') inc('attendant_mw');
@@ -151,7 +156,7 @@ export async function exportToExcel(patients, options = {}) {
         if (p.delivery_mode === 'CS') inc('del_cs');
         if (p.delivery_outcome === 'FT') inc('outcome_ft');
         if (p.delivery_outcome === 'PT') inc('outcome_pt');
-        if (p.delivery_outcome === 'FD') inc('outcome_fd');
+        // FD is now counted per-baby above (line 148) to handle mixed outcomes
         if (p.delivery_outcome === 'AB') inc('outcome_ab');
         if ((p.prenatal_visits || []).length >= 4) inc('anc4_delivery');
         const has1stTriVisit = (p.prenatal_visits || []).some((v) => v.trimester === '1st Trimester');
@@ -740,7 +745,7 @@ export async function exportMaternalTcl(patients, options = {}) {
       urinalysisDate: urinalysis?.date || '',
       urinalysisResult: isUrinalysisUti ? 1 : (urinalysis ? 0 : ''),
       urinalysisRemarks: urinalysis?.remarks || '',
-      deliveryDate: p.delivery_date || '',
+      deliveryDate: firstBaby.delivery_date || p.delivery_date || '',
       deliveryOutcome: p.delivery_outcome || '',
       deliveryMode: p.delivery_mode || '',
       birthWeight: firstBaby.weight || p.birth_weight || '',
@@ -753,7 +758,7 @@ export async function exportMaternalTcl(patients, options = {}) {
       nonHealthPlace: p.delivery_non_health_place || '',
       attendant: (() => { const parsed = parseOthers(p.delivery_attendant); return parsed.main || ''; })(),
       attendantSpecify: (() => { const parsed = parseOthers(p.delivery_attendant); return parsed.specify || ''; })(),
-      deliveryTime: p.delivery_time || '',
+      deliveryTime: firstBaby.delivery_time || p.delivery_time || '',
       pnc1: p.pnc_date_1 || '', pnc2: p.pnc_date_2 || '', pnc3: p.pnc_date_3 || '', pnc4: p.pnc_date_4 || '',
       pncCompleted: is4PncCompleted ? 1 : 0,
       ppIfaCount: p.postpartum_ifa_count || 0,

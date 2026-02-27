@@ -1,54 +1,30 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Paper, Box, Stack, Group, Grid, Input, Select, TextInput, Checkbox, Text, NumberInput, Button } from '@mantine/core';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Paper, Box, Stack, Group, Grid, Input, Select, TextInput, Checkbox, Text, NumberInput, Button, Table, ActionIcon } from '@mantine/core';
+import { ArrowLeft, ArrowRight, Plus, Trash, Pencil } from 'lucide-react';
 import { getWeeksAOG } from '../../../lib/patientHelpers';
+import { formatDate } from '../../../lib/formatters';
 
-export default function DeliveryTab({ formData, setFormData, formErrors, handleBirthWeightChange, handleBabySexChange, isAborted, nextTab, prevTab }) {
-  const [selectedBabyIndex, setSelectedBabyIndex] = useState(0);
+const EMPTY_BABY = { weight: '', category: '', sex: '', delivery_date: '', delivery_time: '', status: 'Live Birth' };
+
+export default function DeliveryTab({ formData, setFormData, formErrors, handleBirthWeightChange, handleBabySexChange, handleBabyFieldChange, addBaby, removeBaby, isAborted, nextTab, prevTab }) {
+  const babyDetails = Array.isArray(formData.baby_details) ? formData.baby_details : [];
+  const isLiveBirth = formData.delivery_outcome === 'FT' || formData.delivery_outcome === 'PT';
 
   const pregnancyType = formData.pregnancy_type || '';
-  const multipleCount = Number(formData.pregnancy_multiple_count) || 0;
+  const maxBabies = pregnancyType === 'Singleton' ? 1 : pregnancyType === 'Twins' ? 2 : pregnancyType === 'Multiple' ? 9 : 1;
+  const canAddBaby = isLiveBirth && !isAborted && babyDetails.length < maxBabies;
 
-  let babyCount = 1;
-  if (pregnancyType === 'Twins') babyCount = 2;
-  else if (pregnancyType === 'Multiple' && multipleCount > 0) babyCount = Math.min(multipleCount, 12);
-
-  useEffect(() => {
-    setSelectedBabyIndex((prev) => Math.min(prev, Math.max(0, babyCount - 1)));
-  }, [babyCount]);
-
-  const baseBabyDetails = Array.isArray(formData.baby_details) ? formData.baby_details : [];
-  const babyDetails = Array.from({ length: babyCount }, (_, index) => {
-    const existing = baseBabyDetails[index];
-    if (existing) return existing;
-    // For Baby 1, fall back to legacy single-baby fields if no structured data yet
-    if (index === 0) {
-      return {
-        weight: formData.birth_weight || '',
-        category: formData.birth_weight_category || '',
-        sex: formData.birth_sex || '',
-      };
-    }
-    return { weight: '', category: '', sex: '' };
-  });
-
-  const effectiveIndex = Math.min(selectedBabyIndex, babyCount - 1);
-  const currentBaby = babyDetails[effectiveIndex] || { weight: '', category: '', sex: '' };
-
-  const handlePregnancyTypeChange = (val) => {
-    setFormData({
-      ...formData,
-      pregnancy_type: val,
-      pregnancy_multiple_count: val === 'Multiple' ? (formData.pregnancy_multiple_count || '') : '',
-    });
-  };
+  // Local form state for adding/editing a baby (like newVisit in PrenatalTab)
+  const [newBaby, setNewBaby] = useState({ ...EMPTY_BABY });
+  const [editingBabyIndex, setEditingBabyIndex] = useState(null);
+  const isEditingBaby = editingBabyIndex != null;
 
   const publicFacilityPlaces = ['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
   const isPublicFacilityPlace = publicFacilityPlaces.includes(formData.delivery_place || '');
 
-  // FHSIS: AB < 20w, PT 20–<37w, FT ≥ 37w, FD any
   const outcomeOptions = useMemo(() => {
-    const weeks = getWeeksAOG(formData.lmp, formData.delivery_date);
+    const deliveryDate = (babyDetails[0] && babyDetails[0].delivery_date) || formData.delivery_date || '';
+    const weeks = getWeeksAOG(formData.lmp, deliveryDate);
     const base = [
       { value: 'FT', label: 'FT - Full Term' },
       { value: 'PT', label: 'PT - Pre-term' },
@@ -62,12 +38,78 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
       if (opt.value === 'FT') return { ...opt, disabled: weeks === null || weeks < 37 };
       return opt;
     });
-  }, [formData.lmp, formData.delivery_date]);
+  }, [formData.lmp, formData.delivery_date, babyDetails]);
+
+  const handleNewBabyWeight = (val) => {
+    let category = '';
+    if (val !== '' && val !== undefined && val !== null) { category = val >= 2500 ? 'Normal' : 'Low'; }
+    setNewBaby((prev) => ({ ...prev, weight: val, category }));
+  };
+
+  const addOrUpdateBaby = () => {
+    if (!newBaby.delivery_date) return;
+
+    setFormData((prev) => {
+      const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
+
+      if (isEditingBaby) {
+        existing[editingBabyIndex] = { ...newBaby };
+      } else {
+        existing.push({ ...newBaby });
+      }
+
+      const next = { ...prev, baby_details: existing };
+      // Sync legacy fields from Baby 1
+      const baby1 = existing[0] || {};
+      next.birth_weight = baby1.weight || '';
+      next.birth_weight_category = baby1.category || '';
+      next.birth_sex = baby1.sex || '';
+      next.delivery_date = baby1.delivery_date || prev.delivery_date || '';
+      next.delivery_time = baby1.delivery_time || prev.delivery_time || '';
+      return next;
+    });
+
+    setNewBaby({ ...EMPTY_BABY });
+    setEditingBabyIndex(null);
+  };
+
+  const startEditBaby = (index) => {
+    const baby = babyDetails[index] || {};
+    setNewBaby({
+      weight: baby.weight || '',
+      category: baby.category || '',
+      sex: baby.sex || '',
+      delivery_date: baby.delivery_date || '',
+      delivery_time: baby.delivery_time || '',
+      status: baby.status || 'Live Birth',
+    });
+    setEditingBabyIndex(index);
+  };
+
+  const cancelEditBaby = () => {
+    setNewBaby({ ...EMPTY_BABY });
+    setEditingBabyIndex(null);
+  };
+
+  const handleRemoveBaby = (index) => {
+    removeBaby(index);
+    if (editingBabyIndex === index) {
+      setNewBaby({ ...EMPTY_BABY });
+      setEditingBabyIndex(null);
+    }
+  };
 
   return (
     <>
+      <style>{`
+        @keyframes baby-edit-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
+          50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+        }
+      `}</style>
+
       <Grid grow>
-        <Grid.Col span={4}>
+        <Grid.Col span={6}>
           <Paper withBorder radius="md" overflow="hidden">
             <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
               <Text size="sm" fw={700} c="blue.9" align="center">Pregnancy Outcome</Text>
@@ -84,125 +126,28 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                     setFormData({
                       ...formData,
                       delivery_outcome: val,
-                      birth_weight: '',
-                      birth_weight_category: '',
-                      birth_sex: '',
-                      delivery_time: '',
-                      delivery_mode: '',
-                      delivery_attendant: '',
-                      delivery_attendant_specify: '',
-                      delivery_place: '',
-                      delivery_facility_type: '',
-                      delivery_place_specify: '',
-                      delivery_non_health_facility: '',
-                      delivery_non_health_place: '',
-                      delivery_place_capable: '',
-                      pregnancy_type: '',
-                      pregnancy_multiple_count: '',
+                      birth_weight: '', birth_weight_category: '', birth_sex: '',
+                      delivery_time: '', delivery_mode: '', delivery_attendant: '',
+                      delivery_attendant_specify: '', delivery_place: '',
+                      delivery_facility_type: '', delivery_place_specify: '',
+                      delivery_non_health_facility: '', delivery_non_health_place: '',
+                      delivery_place_capable: '', pregnancy_type: '',
+                      pregnancy_multiple_count: '', baby_details: [],
                     });
+                    setNewBaby({ ...EMPTY_BABY });
+                    setEditingBabyIndex(null);
                   } else {
                     setFormData({ ...formData, delivery_outcome: val });
                   }
                 }}
               />
               <TextInput label="Remarks" placeholder="..." value={formData.pregnancy_outcome_remarks || ''} onChange={(e) => setFormData({ ...formData, pregnancy_outcome_remarks: e.target.value })} />
-              <Select
-                label="Pregnancy Type"
-                placeholder="Select..."
-                data={['Singleton', 'Twins', 'Multiple']}
-                value={pregnancyType}
-                onChange={handlePregnancyTypeChange}
-              />
-              {pregnancyType === 'Multiple' && (
-                <NumberInput
-                  label="How many?"
-                  placeholder="Enter number"
-                  min={3}
-                  max={12}
-                  allowDecimal={false}
-                  value={formData.pregnancy_multiple_count}
-                  onChange={(val) => setFormData({ ...formData, pregnancy_multiple_count: val })}
-                />
-              )}
             </Stack>
           </Paper>
         </Grid.Col>
 
-        <Grid.Col span={4}>
-          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ position: 'relative', zIndex: 1, opacity: isAborted ? 0.5 : 1 }}>
-            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
-              <Text size="sm" fw={700} c="blue.9" align="center">
-                Baby Details
-              </Text>
-            </Box>
-            <Stack p="sm" gap="xs">
-              {babyCount > 1 && (
-                <Select
-                  label="Select baby to edit"
-                  placeholder="Choose..."
-                  data={Array.from({ length: babyCount }, (_, i) => ({ value: String(i), label: `Baby ${i + 1}` }))}
-                  value={String(effectiveIndex)}
-                  onChange={(val) => val != null && setSelectedBabyIndex(Number(val))}
-                />
-              )}
-              <NumberInput
-                disabled={isAborted}
-                label="Weight (grams)"
-                placeholder="e.g. 3000"
-                value={currentBaby.weight}
-                onChange={(val) => handleBirthWeightChange(val, effectiveIndex)}
-              />
-              <Select
-                disabled
-                label="Category"
-                placeholder="--"
-                data={[
-                  { value: 'Normal', label: 'A - Normal (>= 2500g)' },
-                  { value: 'Low', label: 'B - Low (< 2500g)' },
-                  { value: 'Unknown', label: 'C - Unknown' },
-                ]}
-                value={currentBaby.category || ''}
-                readOnly
-                variant="filled"
-              />
-              <Input.Wrapper label="Sex of Baby">
-                <Group mt="xs" gap="md">
-                  <Button
-                    variant={currentBaby.sex === 'Male' ? 'filled' : 'light'}
-                    disabled={isAborted}
-                    onClick={() => handleBabySexChange('Male', effectiveIndex)}
-                  >
-                    Male
-                  </Button>
-                  <Button
-                    variant={currentBaby.sex === 'Female' ? 'filled' : 'light'}
-                    disabled={isAborted}
-                    onClick={() => handleBabySexChange('Female', effectiveIndex)}
-                  >
-                    Female
-                  </Button>
-                </Group>
-              </Input.Wrapper>
-            </Stack>
-          </Paper>
-        </Grid.Col>
-
-        <Grid.Col span={4}>
-          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
-            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
-              <Text size="sm" fw={700} c="blue.9" align="center">Date/Time of Delivery</Text>
-            </Box>
-            <Stack p="sm" gap="xs">
-              <Input.Wrapper label="Date"><Input type="date" max={new Date().toISOString().split('T')[0]} disabled={isAborted} value={formData.delivery_date || ''} onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })} /></Input.Wrapper>
-              <Input.Wrapper label="Time"><input type="time" disabled={isAborted} style={{ width: '100%', padding: '6px', border: '1px solid #ced4da', borderRadius: '4px' }} value={formData.delivery_time || ''} onChange={(e) => setFormData({ ...formData, delivery_time: e.target.value })} /></Input.Wrapper>
-            </Stack>
-          </Paper>
-        </Grid.Col>
-      </Grid>
-
-      <Grid mt="md">
         <Grid.Col span={6}>
-          <Paper withBorder radius="md" overflow="hidden" style={{ opacity: isAborted ? 0.5 : 1 }}>
+          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
             <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
               <Text size="sm" fw={700} c="blue.9" align="center">Delivery Type</Text>
             </Box>
@@ -224,9 +169,148 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                   ))}
                 </Stack>
               </Input.Wrapper>
+              <Select
+                label="Pregnancy Type"
+                placeholder="Select..."
+                data={['Singleton', 'Twins', 'Multiple']}
+                value={pregnancyType}
+                onChange={(val) => setFormData({ ...formData, pregnancy_type: val || '' })}
+              />
             </Stack>
           </Paper>
         </Grid.Col>
+      </Grid>
+
+      {/* ── Baby Details — Form + Table (like 8ANC visits) ────────────── */}
+      <Paper
+        withBorder
+        radius="md"
+        overflow="hidden"
+        mt="md"
+        style={{
+          opacity: isAborted ? 0.5 : 1,
+          borderLeft: isEditingBaby ? '4px solid var(--mantine-color-green-6)' : undefined,
+          backgroundColor: isEditingBaby ? 'var(--mantine-color-green-0)' : undefined,
+          animation: isEditingBaby ? 'baby-edit-pulse 1.2s ease-out 2' : undefined,
+        }}
+      >
+        <Box
+          bg={isEditingBaby ? 'green.1' : 'blue.1'}
+          p="xs"
+          style={{ borderBottom: '1px solid #dee2e6' }}
+        >
+          <Text size="sm" fw={700} c={isEditingBaby ? 'green.8' : 'blue.9'} align="center">
+            {isEditingBaby
+              ? `Editing Baby ${editingBabyIndex + 1} of ${babyDetails.length} — change values, then click Update Baby`
+              : 'Baby Details'}
+          </Text>
+        </Box>
+        <Stack p="sm" gap="xs">
+          {!isLiveBirth && (
+            <Text size="xs" c="dimmed" ta="center">Select a live birth outcome (FT or PT) to add babies</Text>
+          )}
+          {isLiveBirth && (
+            <>
+              <Group grow>
+                <Input.Wrapper label="Delivery Date" withAsterisk>
+                  <Input type="date" max={new Date().toISOString().split('T')[0]} disabled={isAborted} value={newBaby.delivery_date || ''} onChange={(e) => setNewBaby({ ...newBaby, delivery_date: e.target.value })} />
+                </Input.Wrapper>
+                <Input.Wrapper label="Delivery Time">
+                  <input type="time" disabled={isAborted} style={{ width: '100%', padding: '6px', border: '1px solid #ced4da', borderRadius: '4px' }} value={newBaby.delivery_time || ''} onChange={(e) => setNewBaby({ ...newBaby, delivery_time: e.target.value })} />
+                </Input.Wrapper>
+                <NumberInput disabled={isAborted} label="Weight (g)" placeholder="e.g. 3000" value={newBaby.weight} onChange={handleNewBabyWeight} />
+                <TextInput label="Category" readOnly value={newBaby.category || ''} placeholder="Auto" variant="filled" />
+                <Input.Wrapper label="Sex">
+                  <Group mt={4} gap="xs">
+                    <Button size="xs" variant={newBaby.sex === 'Male' ? 'filled' : 'light'} disabled={isAborted} onClick={() => setNewBaby({ ...newBaby, sex: 'Male' })}>M</Button>
+                    <Button size="xs" variant={newBaby.sex === 'Female' ? 'filled' : 'light'} disabled={isAborted} onClick={() => setNewBaby({ ...newBaby, sex: 'Female' })}>F</Button>
+                  </Group>
+                </Input.Wrapper>
+              </Group>
+              <Group grow>
+                <Select
+                  label="Status"
+                  data={['Live Birth', 'Fetal Death']}
+                  value={newBaby.status || 'Live Birth'}
+                  onChange={(val) => setNewBaby({ ...newBaby, status: val || 'Live Birth' })}
+                  disabled={isAborted}
+                />
+              </Group>
+              <Group gap="xs">
+                <Button
+                  flex={1}
+                  variant={isEditingBaby ? 'outline' : 'filled'}
+                  color={isEditingBaby ? 'green' : 'teal'}
+                  size="md"
+                  leftSection={!isEditingBaby && <Plus size={16} />}
+                  disabled={!canAddBaby && !isEditingBaby}
+                  onClick={addOrUpdateBaby}
+                >
+                  {isEditingBaby ? `Update Baby (${editingBabyIndex + 1} of ${babyDetails.length})` : 'Add Baby'}
+                </Button>
+                {isEditingBaby && <Button variant="subtle" color="gray" size="md" onClick={cancelEditBaby}>Cancel</Button>}
+              </Group>
+              {!isEditingBaby && babyDetails.length >= maxBabies && (
+                <Text size="xs" c="orange" ta="center">Maximum babies reached for {pregnancyType || 'Singleton'} pregnancy ({maxBabies})</Text>
+              )}
+            </>
+          )}
+        </Stack>
+      </Paper>
+
+      {/* ── Baby List Table ───────────────────────────────────────────── */}
+      <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
+        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+          <Text size="sm" fw={700} c="blue.9" align="center">Baby List ({babyDetails.length})</Text>
+        </Box>
+        <Box p="sm">
+          <Box style={{ overflowX: 'auto' }}>
+            <Table striped withTableBorder>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>#</Table.Th>
+                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Time</Table.Th>
+                  <Table.Th>Weight</Table.Th>
+                  <Table.Th>Category</Table.Th>
+                  <Table.Th>Sex</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Action</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {babyDetails.length === 0 && (
+                  <Table.Tr>
+                    <Table.Td colSpan={8}>
+                      <Text size="sm" c="dimmed" ta="center">No babies added yet.</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+                {babyDetails.map((baby, i) => (
+                  <Table.Tr key={i} bg={i === editingBabyIndex ? 'green.0' : undefined} style={i === editingBabyIndex ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
+                    <Table.Td>Baby {i + 1}</Table.Td>
+                    <Table.Td>{formatDate(baby.delivery_date) || '—'}</Table.Td>
+                    <Table.Td>{baby.delivery_time || '—'}</Table.Td>
+                    <Table.Td>{baby.weight ? `${baby.weight}g` : '—'}</Table.Td>
+                    <Table.Td>{baby.category || '—'}</Table.Td>
+                    <Table.Td>{baby.sex || '—'}</Table.Td>
+                    <Table.Td><Text size="xs" c={baby.status === 'Fetal Death' ? 'red' : 'green'} fw={600}>{baby.status || 'Live Birth'}</Text></Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <ActionIcon color="blue" size="sm" variant="light" onClick={() => startEditBaby(i)} title="Edit"><Pencil size={14} /></ActionIcon>
+                        <ActionIcon color="red" size="sm" onClick={() => handleRemoveBaby(i)} title="Delete"><Trash size={14} /></ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* ── Birth Attendant + Birth Registration ─────────────────────── */}
+      <Grid mt="md">
         <Grid.Col span={6}>
           <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
             <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
@@ -238,56 +322,49 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
             </Stack>
           </Paper>
         </Grid.Col>
+        <Grid.Col span={6}>
+          <Paper withBorder radius="md" overflow="hidden" h="100%" style={{ opacity: isAborted ? 0.5 : 1 }}>
+            <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+              <Text size="sm" fw={700} c="blue.9" align="center">Birth Registration</Text>
+            </Box>
+            <Stack p="sm" gap="xs">
+              <Input.Wrapper label="Birth Registered?">
+                <Group mt="xs" gap="md">
+                  <Checkbox
+                    label="Yes"
+                    checked={formData.birth_registered === true}
+                    onChange={(e) => {
+                      const checked = e.currentTarget.checked;
+                      setFormData({
+                        ...formData,
+                        birth_registered: checked ? true : null,
+                        ...(checked ? {} : { birth_registration_date: '' }),
+                      });
+                    }}
+                  />
+                  <Checkbox
+                    label="No"
+                    checked={formData.birth_registered === false}
+                    onChange={(e) => {
+                      const checked = e.currentTarget.checked;
+                      if (checked) {
+                        setFormData({ ...formData, birth_registered: false, birth_registration_date: '' });
+                      }
+                    }}
+                  />
+                </Group>
+              </Input.Wrapper>
+              {formData.birth_registered === true && (
+                <Input.Wrapper label="Date of registration">
+                  <Input type="date" max={new Date().toISOString().split('T')[0]} value={formData.birth_registration_date || ''} onChange={(e) => setFormData({ ...formData, birth_registration_date: e.target.value })} />
+                </Input.Wrapper>
+              )}
+            </Stack>
+          </Paper>
+        </Grid.Col>
       </Grid>
 
-      <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
-        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
-          <Text size="sm" fw={700} c="blue.9" align="center">Birth Registration</Text>
-        </Box>
-        <Stack p="sm" gap="xs">
-          <Input.Wrapper label="Birth Registered?">
-            <Group mt="xs" gap="md">
-              <Checkbox
-                label="Yes"
-                checked={formData.birth_registered === true}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked;
-                  setFormData({
-                    ...formData,
-                    birth_registered: checked ? true : null,
-                    ...(checked ? {} : { birth_registration_date: '' }),
-                  });
-                }}
-              />
-              <Checkbox
-                label="No"
-                checked={formData.birth_registered === false}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked;
-                  if (checked) {
-                    setFormData({
-                      ...formData,
-                      birth_registered: false,
-                      birth_registration_date: '',
-                    });
-                  }
-                }}
-              />
-            </Group>
-          </Input.Wrapper>
-          {formData.birth_registered === true && (
-            <Input.Wrapper label="Date of registration">
-              <Input
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={formData.birth_registration_date || ''}
-                onChange={(e) => setFormData({ ...formData, birth_registration_date: e.target.value })}
-              />
-            </Input.Wrapper>
-          )}
-        </Stack>
-      </Paper>
-
+      {/* ── Place of Delivery ────────────────────────────────────────── */}
       <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
         <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
           <Text size="sm" fw={700} c="blue.9" align="center">Place of Delivery</Text>
