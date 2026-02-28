@@ -11,12 +11,12 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           <Text size="sm" fw={700} c="blue.9" align="center">Personal Information</Text>
         </Box>
         <Grid p="sm">
-          <Grid.Col span={4}> <TextInput error={formErrors.last_name} label="Last Name" placeholder="Dela Cruz" withAsterisk value={formData.last_name || ''} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} /> </Grid.Col>
-          <Grid.Col span={4}> <TextInput error={formErrors.first_name} label="First Name" placeholder="Juana" withAsterisk value={formData.first_name || ''} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} /> </Grid.Col>
-          <Grid.Col span={4}> <TextInput label="Middle Name" placeholder="Santos" value={formData.middle_name || ''} onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })} /> </Grid.Col>
-          <Grid.Col span={12}> <TextInput error={formErrors.address} withAsterisk label="Complete Address" placeholder="House No., Street, etc." value={formData.address || ''} onChange={(e) => setFormData({ ...formData, address: e.target.value })} /> </Grid.Col>
+          <Grid.Col span={4}> <TextInput error={formErrors.last_name} label="Last Name" placeholder="Dela Cruz" withAsterisk value={formData.last_name || ''} onChange={(e) => setFormData({ ...formData, last_name: e.target.value.toUpperCase() })} /> </Grid.Col>
+          <Grid.Col span={4}> <TextInput error={formErrors.first_name} label="First Name" placeholder="Juana" withAsterisk value={formData.first_name || ''} onChange={(e) => setFormData({ ...formData, first_name: e.target.value.toUpperCase() })} /> </Grid.Col>
+          <Grid.Col span={4}> <TextInput label="Middle Name" placeholder="Santos" value={formData.middle_name || ''} onChange={(e) => setFormData({ ...formData, middle_name: e.target.value.toUpperCase() })} /> </Grid.Col>
+          <Grid.Col span={12}> <TextInput error={formErrors.address} withAsterisk label="Complete Address" placeholder="House No., Street, etc." value={formData.address || ''} onChange={(e) => setFormData({ ...formData, address: e.target.value.toUpperCase() })} /> </Grid.Col>
           <Grid.Col span={6}> <Select error={formErrors.barangay} label="Barangay" placeholder="Select Barangay" data={barangayOptions} searchable value={formData.barangay || ''} onChange={(val) => setFormData({ ...formData, barangay: val })} /> </Grid.Col>
-          <Grid.Col span={6}> <TextInput label="Sitio / Purok" placeholder="(Optional)" value={formData.sitio || ''} onChange={(e) => setFormData({ ...formData, sitio: e.target.value })} /> </Grid.Col>
+          <Grid.Col span={6}> <TextInput label="Sitio / Purok" placeholder="(Optional)" value={formData.sitio || ''} onChange={(e) => setFormData({ ...formData, sitio: e.target.value.toUpperCase() })} /> </Grid.Col>
           <Grid.Col span={6}>
             <TextInput
               label="Contact No."
@@ -266,7 +266,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                 label="Other reason (optional)"
                 placeholder="e.g., History of C-Section..."
                 value={formData.high_risk_reason || ''}
-                onChange={(e) => setFormData({ ...formData, high_risk_reason: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, high_risk_reason: e.target.value.toUpperCase() })}
               />
             </Stack>
           )}

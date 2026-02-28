@@ -79,7 +79,7 @@ export default function PostnatalTab({
               <Text size="xs" fw={600} c="dimmed" mb={4}>Completed 4PNC?</Text>
               <Text size="sm" fw={500} c={is4PncCompleted ? 'green' : 'dimmed'}>{is4PncCompleted ? 'Yes' : 'No'}</Text>
             </Box>
-            <TextInput label="Remarks" placeholder="Optional" value={formData.pnc_remarks || ''} onChange={(e) => setFormData({ ...formData, pnc_remarks: e.target.value })} />
+            <TextInput label="Remarks" placeholder="Optional" value={formData.pnc_remarks || ''} onChange={(e) => setFormData({ ...formData, pnc_remarks: e.target.value.toUpperCase() })} />
           </Stack>
         </Paper>
       </Grid.Col>

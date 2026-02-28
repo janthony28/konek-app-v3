@@ -47,7 +47,7 @@ export default function LabsTab({ formData, setFormData, newLab, setNewLab, addL
               label="Remarks"
               placeholder="Enter remarks"
               value={newLab.remarks || ''}
-              onChange={(e) => setNewLab({ ...newLab, remarks: e.target.value })}
+              onChange={(e) => setNewLab({ ...newLab, remarks: e.target.value.toUpperCase() })}
               style={{ maxWidth: 400 }}
             />
           )}

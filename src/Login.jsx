@@ -13,7 +13,7 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // This talks to Supabase Auth
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -70,37 +70,37 @@ export default function Login() {
           zIndex: 0,
         }}
       />
-      
+
       <Container size={420} style={{ flex: '0 1 auto', position: 'relative', zIndex: 1 }}>
-        <Paper 
-          className="login-card-reveal" 
-          withBorder 
-          shadow="xl" 
-          p={40} 
-          radius="xl" 
-          style={{ 
+        <Paper
+          className="login-card-reveal"
+          withBorder
+          shadow="xl"
+          p={40}
+          radius="xl"
+          style={{
             borderColor: 'rgba(34, 177, 76, 0.2)',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(34, 177, 76, 0.05)',
           }}
         >
           {/* LOGO */}
           <Group justify="center" mb="xl">
-            <img 
-              src="/konek-logo.png" 
-              alt="KONEK – KOmunidad NEtwork for Kalusugan" 
-              style={{ 
-                width: 180, 
+            <img
+              src="/konek-logo.png"
+              alt="KONEK – KOmunidad NEtwork for Kalusugan"
+              style={{
+                width: 180,
                 height: 'auto',
-              }} 
+              }}
             />
           </Group>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} className="login-no-uppercase">
             <Stack gap="md">
-              <TextInput 
-                label="Email" 
-                placeholder="midwife@konek.ph" 
-                required 
+              <TextInput
+                label="Email"
+                placeholder="midwife@konek.ph"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 size="md"
@@ -111,11 +111,11 @@ export default function Login() {
                   }
                 }}
               />
-              
-              <PasswordInput 
-                label="Password" 
-                placeholder="Your password" 
-                required 
+
+              <PasswordInput
+                label="Password"
+                placeholder="Your password"
+                required
                 mt="md"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -128,11 +128,11 @@ export default function Login() {
                 }}
               />
 
-              <Button 
-                fullWidth 
-                mt="xl" 
-                color="teal" 
-                type="submit" 
+              <Button
+                fullWidth
+                mt="xl"
+                color="teal"
+                type="submit"
                 loading={loading}
                 size="md"
                 radius="md"
@@ -144,7 +144,7 @@ export default function Login() {
               >
                 Login
               </Button>
-              
+
               <Text c="dimmed" size="xs" ta="center" mt="md" style={{ lineHeight: 1.6 }}>
                 By clicking Login, you agree to our{' '}
                 <Anchor component="button" type="button" size="xs" c="#22B14C" fw={600} onClick={() => setShowLegalPage(true)}>

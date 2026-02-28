@@ -913,9 +913,17 @@ function MainApp({ session, onLogout }) {
         rawPayload.delivery_non_health_facility = null;
         rawPayload.delivery_non_health_place = null;
       }
-      const publicFacilityPlaces = ['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
+      const publicFacilityPlaces = ['BHS/RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
       if (publicFacilityPlaces.includes(formData.delivery_place || '')) {
         rawPayload.delivery_facility_type = 'Public';
+      }
+      // Clean up Lying In clinic name when place is not 'Lying In'
+      if (formData.delivery_place !== 'Lying In') {
+        rawPayload.lying_in_clinic_name = null;
+      }
+      // Clean up Place of Birth specify when not 'Outside Batangas City'
+      if (formData.place_of_birth !== 'Outside Batangas City') {
+        rawPayload.place_of_birth_specify = null;
       }
 
       const numberFields = ['age', 'gravida', 'parity', 'birth_weight', 'height', 'weight', 'bmi', 'postpartum_ifa_count', 'pregnancy_multiple_count'];

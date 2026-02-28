@@ -554,10 +554,13 @@ export async function exportMaternalTcl(patients, options = {}) {
     { header: 'Birth Wt. Category\nA=Normal,\nB=Low, C=Unknown', key: 'birthWeightCat', width: 18, group: 'delivery' },
     { header: 'Sex of Baby 1\n(M/F)', key: 'birthSex', width: 12, group: 'delivery' },
     { header: 'Place of Delivery\n(health facility)', key: 'deliveryPlace', width: 22, group: 'delivery' },
+    { header: 'Lying In\nClinic Name', key: 'lyingInClinicName', width: 22, group: 'delivery' },
     { header: 'Facility Type\n(Public/Private)', key: 'facilityType', width: 16, group: 'delivery' },
     { header: 'BEmONC/CEmONC\nCapable?\n(Yes/No)', key: 'facilityCapable', width: 16, group: 'delivery' },
     { header: 'Non-Health Facility\n(Home/Others)', key: 'nonHealthFacility', width: 20, group: 'delivery' },
     { header: 'Non-Health Facility\nPlace (specify)', key: 'nonHealthPlace', width: 20, group: 'delivery' },
+    { header: 'Place of Birth', key: 'placeOfBirth', width: 22, group: 'delivery' },
+    { header: 'Place of Birth\n(specify)', key: 'placeOfBirthSpecify', width: 22, group: 'delivery' },
     { header: 'Birth Attendant\n(MD/RN/MW/Others)', key: 'attendant', width: 20, group: 'delivery' },
     { header: 'Birth Attendant\n(specify, if Others)', key: 'attendantSpecify', width: 20, group: 'delivery' },
     { header: 'Time of Delivery', key: 'deliveryTime', width: 14, group: 'delivery' },
@@ -673,6 +676,9 @@ export async function exportMaternalTcl(patients, options = {}) {
     const fullName = middle ? `${baseName} ${middle}` : baseName;
     const address = [p.address, p.sitio, p.barangay, p.city_municipality, p.province].filter(Boolean).join(', ');
 
+    // Helper to uppercase string values for report consistency
+    const up = (v) => (typeof v === 'string' ? v.toUpperCase() : (v ?? ''));
+
     const visits = Array.isArray(p.prenatal_visits) ? [...p.prenatal_visits] : [];
     visits.sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
     const visitDates = visits.map((v) => v?.date || '');
@@ -702,8 +708,8 @@ export async function exportMaternalTcl(patients, options = {}) {
     const rowValues = {
       no: idx + 1,
       dateReg: p.date_of_registration || p.date_registered || '',
-      fullName,
-      address,
+      fullName: up(fullName),
+      address: up(address),
       contactNo: p.contact_no || '',
       email: p.email_address || '',
       age: Number.isNaN(ageNum) ? '' : ageNum,
@@ -744,7 +750,7 @@ export async function exportMaternalTcl(patients, options = {}) {
       gdmResult: isGdmPos ? 1 : (gdm ? 0 : ''),
       urinalysisDate: urinalysis?.date || '',
       urinalysisResult: isUrinalysisUti ? 1 : (urinalysis ? 0 : ''),
-      urinalysisRemarks: urinalysis?.remarks || '',
+      urinalysisRemarks: up(urinalysis?.remarks || ''),
       deliveryDate: firstBaby.delivery_date || p.delivery_date || '',
       deliveryOutcome: p.delivery_outcome || '',
       deliveryMode: p.delivery_mode || '',
@@ -752,12 +758,15 @@ export async function exportMaternalTcl(patients, options = {}) {
       birthWeightCat: firstBaby.category || p.birth_weight_category || '',
       birthSex: (firstBaby.sex || p.birth_sex || '').startsWith('M') ? 'M' : (firstBaby.sex || p.birth_sex || '').startsWith('F') ? 'F' : '',
       deliveryPlace: p.delivery_place || '',
+      lyingInClinicName: up(p.lying_in_clinic_name || ''),
       facilityType: p.delivery_facility_type || '',
       facilityCapable: p.delivery_place_capable || '',
       nonHealthFacility: p.delivery_non_health_facility === 'Others' ? 'Others' : (p.delivery_non_health_facility || ''),
-      nonHealthPlace: p.delivery_non_health_place || '',
+      nonHealthPlace: up(p.delivery_non_health_place || ''),
+      placeOfBirth: p.place_of_birth || '',
+      placeOfBirthSpecify: up(p.place_of_birth_specify || ''),
       attendant: (() => { const parsed = parseOthers(p.delivery_attendant); return parsed.main || ''; })(),
-      attendantSpecify: (() => { const parsed = parseOthers(p.delivery_attendant); return parsed.specify || ''; })(),
+      attendantSpecify: up((() => { const parsed = parseOthers(p.delivery_attendant); return parsed.specify || ''; })()),
       deliveryTime: firstBaby.delivery_time || p.delivery_time || '',
       pnc1: p.pnc_date_1 || '', pnc2: p.pnc_date_2 || '', pnc3: p.pnc_date_3 || '', pnc4: p.pnc_date_4 || '',
       pncCompleted: is4PncCompleted ? 1 : 0,

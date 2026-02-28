@@ -79,6 +79,19 @@ body {
   transition: all var(--transition-base);
 }
 
+/* Auto-uppercase all text inputs (patient data fields) */
+.mantine-TextInput-input {
+  text-transform: uppercase;
+}
+.mantine-TextInput-input::placeholder {
+  text-transform: none;
+}
+/* Exclude login page inputs from uppercase */
+.login-no-uppercase .mantine-TextInput-input,
+.login-no-uppercase .mantine-PasswordInput-input {
+  text-transform: none;
+}
+
 .mantine-Input-input:focus,
 .mantine-Select-input:focus {
   box-shadow: 0 0 0 3px rgba(34, 177, 76, 0.1);

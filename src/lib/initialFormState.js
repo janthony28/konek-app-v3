@@ -73,6 +73,9 @@ export function getInitialFormState() {
     delivery_non_health_place: '',
     delivery_non_health_facility: '',
     delivery_place_capable: '',
+    lying_in_clinic_name: '',
+    place_of_birth: '',
+    place_of_birth_specify: '',
 
     pnc_date_1: '', pnc_date_2: '', pnc_date_3: '', pnc_date_4: '',
     pnc_contacts: [],

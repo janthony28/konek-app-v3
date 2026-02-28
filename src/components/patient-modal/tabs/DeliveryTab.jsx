@@ -19,7 +19,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
   const [editingBabyIndex, setEditingBabyIndex] = useState(null);
   const isEditingBaby = editingBabyIndex != null;
 
-  const publicFacilityPlaces = ['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
+  const publicFacilityPlaces = ['BHS/RHU/UHU', 'Govt Hospital', 'Public Infirmary'];
   const isPublicFacilityPlace = publicFacilityPlaces.includes(formData.delivery_place || '');
 
   const outcomeOptions = useMemo(() => {
@@ -133,6 +133,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                       delivery_non_health_facility: '', delivery_non_health_place: '',
                       delivery_place_capable: '', pregnancy_type: '',
                       pregnancy_multiple_count: '', baby_details: [],
+                      lying_in_clinic_name: '', place_of_birth: '', place_of_birth_specify: '',
                     });
                     setNewBaby({ ...EMPTY_BABY });
                     setEditingBabyIndex(null);
@@ -141,7 +142,6 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                   }
                 }}
               />
-              <TextInput label="Remarks" placeholder="..." value={formData.pregnancy_outcome_remarks || ''} onChange={(e) => setFormData({ ...formData, pregnancy_outcome_remarks: e.target.value })} />
             </Stack>
           </Paper>
         </Grid.Col>
@@ -176,6 +176,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                 value={pregnancyType}
                 onChange={(val) => setFormData({ ...formData, pregnancy_type: val || '' })}
               />
+              <TextInput label="Remarks" placeholder="..." value={formData.pregnancy_outcome_remarks || ''} onChange={(e) => setFormData({ ...formData, pregnancy_outcome_remarks: e.target.value.toUpperCase() })} />
             </Stack>
           </Paper>
         </Grid.Col>
@@ -318,7 +319,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
             </Box>
             <Stack p="sm">
               <Select disabled={isAborted} placeholder="Select Attendant" data={[{ value: 'MD', label: 'MD - Doctor' }, { value: 'RN', label: 'RN - Nurse' }, { value: 'MW', label: 'MW - Midwife' }, { value: 'Others', label: 'Others' }]} value={formData.delivery_attendant || ''} onChange={(val) => setFormData({ ...formData, delivery_attendant: val })} />
-              {formData.delivery_attendant === 'Others' && (<TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_attendant_specify || ''} onChange={(e) => setFormData({ ...formData, delivery_attendant_specify: e.target.value })} />)}
+              {formData.delivery_attendant === 'Others' && (<TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_attendant_specify || ''} onChange={(e) => setFormData({ ...formData, delivery_attendant_specify: e.target.value.toUpperCase() })} />)}
             </Stack>
           </Paper>
         </Grid.Col>
@@ -371,7 +372,12 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
         </Box>
         <Grid p="sm">
           <Grid.Col span={4}>
-            <Select disabled={isAborted} label="Place" placeholder="Select Place..." data={['BHS', 'RHU/UHU', 'Govt Hospital', 'Public Infirmary', 'Ambulance', 'Others']} value={formData.delivery_place || ''} onChange={(val) => setFormData({ ...formData, delivery_place: val, ...(publicFacilityPlaces.includes(val || '') ? { delivery_facility_type: 'Public' } : {}), ...(val !== 'Others' ? { delivery_non_health_facility: '', delivery_non_health_place: '' } : {}) })} />
+            <Stack gap="xs">
+              <Select disabled={isAborted} label="Place" placeholder="Select Place..." data={['BHS/RHU/UHU', 'Govt Hospital', 'Public Infirmary', 'Lying In', 'Ambulance', 'Others']} value={formData.delivery_place || ''} onChange={(val) => setFormData({ ...formData, delivery_place: val, ...(publicFacilityPlaces.includes(val || '') ? { delivery_facility_type: 'Public' } : {}), ...(val !== 'Others' ? { delivery_non_health_facility: '', delivery_non_health_place: '' } : {}), ...(val !== 'Lying In' ? { lying_in_clinic_name: '' } : {}) })} />
+              {formData.delivery_place === 'Lying In' && (
+                <TextInput disabled={isAborted} label="Name of Lying In Clinic" placeholder="Enter clinic name..." value={formData.lying_in_clinic_name || ''} onChange={(e) => setFormData({ ...formData, lying_in_clinic_name: e.target.value.toUpperCase() })} />
+              )}
+            </Stack>
           </Grid.Col>
           <Grid.Col span={4}>
             <Select disabled={isAborted || isPublicFacilityPlace} label="Facility Type" placeholder="Select Type..." data={['Public', 'Private']} value={isPublicFacilityPlace ? 'Public' : (formData.delivery_facility_type || '')} onChange={(val) => setFormData({ ...formData, delivery_facility_type: val })} />
@@ -383,13 +389,26 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                 <>
                   <Select disabled={isAborted} label="Non-Health Facility" placeholder="Select..." data={['Home', 'Others']} value={formData.delivery_non_health_facility || ''} onChange={(val) => setFormData({ ...formData, delivery_non_health_facility: val || '', delivery_non_health_place: val === 'Others' ? (formData.delivery_non_health_place || '') : '' })} />
                   {formData.delivery_non_health_facility === 'Others' && (
-                    <TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_non_health_place || ''} onChange={(e) => setFormData({ ...formData, delivery_non_health_place: e.target.value })} />
+                    <TextInput disabled={isAborted} placeholder="Please specify..." value={formData.delivery_non_health_place || ''} onChange={(e) => setFormData({ ...formData, delivery_non_health_place: e.target.value.toUpperCase() })} />
                   )}
                 </>
               )}
             </Stack>
           </Grid.Col>
         </Grid>
+      </Paper>
+
+      {/* ── Place of Birth ─────────────────────────────────────────────── */}
+      <Paper withBorder radius="md" overflow="hidden" mt="md" style={{ opacity: isAborted ? 0.5 : 1 }}>
+        <Box bg="blue.1" p="xs" style={{ borderBottom: '1px solid #dee2e6' }}>
+          <Text size="sm" fw={700} c="blue.9" align="center">Place of Birth</Text>
+        </Box>
+        <Stack p="sm" gap="xs">
+          <Select disabled={isAborted} label="Place of Birth" placeholder="Select..." data={['Within Batangas City', 'Outside Batangas City']} value={formData.place_of_birth || ''} onChange={(val) => setFormData({ ...formData, place_of_birth: val, ...(val !== 'Outside Batangas City' ? { place_of_birth_specify: '' } : {}) })} />
+          {formData.place_of_birth === 'Outside Batangas City' && (
+            <TextInput disabled={isAborted} label="Specify Area" placeholder="Enter specific area..." value={formData.place_of_birth_specify || ''} onChange={(e) => setFormData({ ...formData, place_of_birth_specify: e.target.value.toUpperCase() })} />
+          )}
+        </Stack>
       </Paper>
 
       <Group justify="space-between" mt="md">
