@@ -953,6 +953,11 @@ function MainApp({ session, onLogout }) {
         setEditingLabIndex(null);
         setEditingPostpartumIndex(null);
         setEditingPncContactIndex(null);
+        setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+        setNewSupp({ type: 'IFA', date: '', count: '' });
+        setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
+        setNewPostpartumLog({ date: '', count: '', remarks: '' });
+        setNewPncContact({ date: '' });
         fetchPatients();
       } else {
         notifications.show({ title: 'Error', message: error.message, color: 'red' });
