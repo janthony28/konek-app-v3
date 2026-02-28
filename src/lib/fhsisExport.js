@@ -158,7 +158,7 @@ export async function exportToExcel(patients, options = {}) {
         if (p.delivery_outcome === 'PT') inc('outcome_pt');
         // FD is now counted per-baby above (line 148) to handle mixed outcomes
         if (p.delivery_outcome === 'AB') inc('outcome_ab');
-        if ((p.prenatal_visits || []).length >= 4) inc('anc4_delivery');
+        if ((p.prenatal_visits || []).length >= 8) inc('anc4_delivery');
         const has1stTriVisit = (p.prenatal_visits || []).some((v) => v.trimester === '1st Trimester');
         if (has1stTriVisit) inc('anc1st_tri');
         if (gravida === 1) inc('first_birth');
@@ -418,7 +418,7 @@ export async function exportToExcel(patients, options = {}) {
   row3('26. Number of postpartum women who completed iron with folic acid supplementation', 'postpartum_ifa', '', null, '', null);
   row3('27. Number of postpartum women with Vitamin A supplementation', 'vit_a', '', null, '', null);
   row3('28. No. of pregnant women who are diagnosed with hypertension', 'hypertension', '', null, '', null);
-  row3('29a. No. of deliveries with 4 ANC', 'anc4_delivery', '', null, '', null);
+  row3('29a. No. of deliveries with 8 ANC', 'anc4_delivery', '', null, '', null);
   row3('29b. No. of deliveries with 1 ANC during 1st trimester', 'anc1st_tri', '', null, '', null);
   row3('30. No. of women who gave birth for the 1st time', 'first_birth', '', null, '', null);
   row3('31. No. of women who gave birth who are Grand Multigravida (G5 and above)', 'grand_multigravida', '', null, '', null);
