@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActionIcon, Alert, Divider, Grid, Group, Loader, Modal, Paper, ScrollArea, Stack, Table, Text, ThemeIcon, Title, Tooltip as MantineTooltip } from '@mantine/core';
-import { BarChart3, Baby, Download, Edit2, HeartPulse, PieChart as PieChartIcon, Shield, UserCheck } from 'lucide-react';
+import { ActionIcon, Alert, Button, Divider, Grid, Group, Loader, Modal, Paper, ScrollArea, Stack, Table, Text, ThemeIcon, Title, Tooltip as MantineTooltip } from '@mantine/core';
+import { BarChart3, Baby, Download, Edit2, HeartPulse, PieChart as PieChartIcon, RefreshCw, Shield, UserCheck } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -124,6 +124,7 @@ function renderPercentLabel({ percent: pct }) {
 
 export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
 
@@ -132,24 +133,21 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   const [modalTitle, setModalTitle] = useState('');
   const [modalRecords, setModalRecords] = useState([]); // Array of { id, name }
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await fetchStatisticsData({ isAdmin, userId });
-        if (!mounted) return;
-        setStats(data);
-      } catch (err) {
-        if (!mounted) return;
-        setError(err?.message || 'Failed to load statistics.');
-      } finally {
-        if (mounted) setLoading(false);
-      }
+  async function loadStats({ showLoader = true } = {}) {
+    if (showLoader) setLoading(true);
+    setError('');
+    try {
+      const data = await fetchStatisticsData({ isAdmin, userId });
+      setStats(data);
+    } catch (err) {
+      setError(err?.message || 'Failed to load statistics.');
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { mounted = false; };
+  }
+
+  useEffect(() => {
+    loadStats();
   }, [isAdmin, userId]);
 
   /** Open the record list modal */
@@ -320,13 +318,31 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <Stack gap="lg">
-      <div>
-        <Title order={3}>Statistics Dashboard</Title>
-        <Text c="dimmed" size="sm">
-          Aggregated from {stats?.totals?.mothers || 0} maternal record{(stats?.totals?.mothers || 0) !== 1 ? 's' : ''}.
-          <Text span size="xs" c="dimmed" ml={8} fs="italic">Click any slice or bar to view the matching records.</Text>
-        </Text>
-      </div>
+      <Group justify="space-between" wrap="wrap">
+        <div>
+          <Group gap="sm">
+            <Title order={3}>Statistics Dashboard</Title>
+            <Button
+              variant="filled"
+              color="teal"
+              size="compact-md"
+              radius="md"
+              loading={refreshing}
+              leftSection={<RefreshCw size={16} />}
+              onClick={async () => {
+                setRefreshing(true);
+                try { await loadStats({ showLoader: false }); } finally { setRefreshing(false); }
+              }}
+            >
+              Refresh
+            </Button>
+          </Group>
+          <Text c="dimmed" size="sm">
+            Aggregated from {stats?.totals?.mothers || 0} maternal record{(stats?.totals?.mothers || 0) !== 1 ? 's' : ''}.
+            <Text span size="xs" c="dimmed" ml={8} fs="italic">Click any slice or bar to view the matching records.</Text>
+          </Text>
+        </div>
+      </Group>
 
       {/* ═══════ RECORD LIST MODAL ═══════ */}
       <Modal

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Group, Paper, Stack, Table, Text, Title, Badge, Box, Button, TextInput, ActionIcon, Select, Grid, Checkbox, ThemeIcon } from '@mantine/core';
-import { UserPlus, Search, Edit, Trash, Filter } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash, Filter, RefreshCw } from 'lucide-react';
 import { formatDate } from '../../lib/formatters';
 import { isPatientDue, getLatestPrenatalVisit } from '../../lib/patientHelpers';
 import { filterPatientsByReportMonth } from '../../lib/reportMonthFilter';
@@ -41,7 +41,9 @@ export default function RecordsView({
   setFilterStatus,
   modalOpened,
   allowedBarangays = [],
+  onRefresh,
 }) {
+  const [refreshing, setRefreshing] = useState(false);
   const barangayOptions = [{ value: '', label: 'All barangays' }, ...(allowedBarangays.length > 0 ? allowedBarangays.map(b => ({ value: b, label: b })) : BATANGAS_BARANGAYS)];
   const [recordMonth, setRecordMonth] = useState('');
   const [recordYear, setRecordYear] = useState(String(currentYear));
@@ -110,7 +112,25 @@ export default function RecordsView({
   return (
     <Stack gap="lg">
       <Group justify="space-between" wrap="wrap">
-        <Title order={3} fw={800} style={{ letterSpacing: '-0.02em' }}>{viewTitle}</Title>
+        <Group gap="sm">
+          <Title order={3} fw={800} style={{ letterSpacing: '-0.02em' }}>{viewTitle}</Title>
+          <Button
+            variant="filled"
+            color="teal"
+            size="compact-md"
+            radius="md"
+            loading={refreshing}
+            leftSection={<RefreshCw size={16} />}
+            onClick={async () => {
+              if (onRefresh) {
+                setRefreshing(true);
+                try { await onRefresh(); } finally { setRefreshing(false); }
+              }
+            }}
+          >
+            Refresh
+          </Button>
+        </Group>
         <Button
           leftSection={<UserPlus size={18} />}
           color="teal"

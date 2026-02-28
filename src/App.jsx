@@ -978,7 +978,7 @@ function MainApp({ session, onLogout }) {
 
   const mainContent =
     activePage === 'dashboard' ? <DashboardView patients={patients} currentTime={currentTime} handleAddClick={handleAddClick} onFilterSelect={handleFilterSelect} /> :
-      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} currentUserId={session?.user?.id} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} /> :
+      activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleDelete={handleDelete} isAdmin={isAdmin} currentUserId={session?.user?.id} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} onRefresh={fetchPatients} /> :
         activePage === 'reports' ? <ReportsView patients={patients} allowedBarangays={allowedBarangays} /> :
           activePage === 'statistics' ? <StatisticsView isAdmin={isAdmin} userId={session.user.id} onEditRecord={(recordId) => { const patient = patients.find((p) => p.id === recordId); if (patient) handleEditClick(patient); else { fetchPatients().then(() => { const fresh = patients.find((p) => p.id === recordId); if (fresh) handleEditClick(fresh); }); } }} /> :
             activePage === 'users' && isAdmin ? <UserManagementView /> :
