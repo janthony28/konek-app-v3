@@ -149,17 +149,7 @@ export default function SupplementationTab({
                   onChange={() => setCalciumCompleted(false)}
                 />
               </Group>
-              {calciumCompleted && (
-                <Group gap="xs" mt="xs">
-                  <Text size="sm" fw={500}>Date Completed:</Text>
-                  <Input
-                    type="date"
-                    max={new Date().toISOString().split('T')[0]}
-                    value={formData.calcium_carbonate_date_completed || ''}
-                    onChange={(e) => setFormData({ ...formData, calcium_carbonate_date_completed: e.target.value })}
-                  />
-                </Group>
-              )}
+
               <Divider my={4} />
               <Select
                 label="Frequency"
