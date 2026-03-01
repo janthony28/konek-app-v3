@@ -69,7 +69,17 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
       return next;
     });
 
-    setNewBaby({ ...EMPTY_BABY });
+    // Pre-fill date/time from Baby 1 for succeeding babies
+    setFormData((prev) => {
+      const babies = Array.isArray(prev.baby_details) ? prev.baby_details : [];
+      const baby1 = babies[0] || {};
+      if (babies.length > 0) {
+        setNewBaby({ ...EMPTY_BABY, delivery_date: baby1.delivery_date || '', delivery_time: baby1.delivery_time || '' });
+      } else {
+        setNewBaby({ ...EMPTY_BABY });
+      }
+      return prev;
+    });
     setEditingBabyIndex(null);
   };
 
@@ -209,6 +219,9 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
         <Stack p="sm" gap="xs">
           {!isLiveBirth && (
             <Text size="xs" c="dimmed" ta="center">Select a live birth outcome (FT or PT) to add babies</Text>
+          )}
+          {formErrors?.baby_details && isLiveBirth && babyDetails.length === 0 && (
+            <Text size="xs" c="red" ta="center" fw={600}>{formErrors.baby_details}</Text>
           )}
           {isLiveBirth && (
             <>

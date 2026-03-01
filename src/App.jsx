@@ -811,6 +811,8 @@ function MainApp({ session, onLogout }) {
     const isAbortedCheck = formData.delivery_outcome === 'AB' || formData.delivery_outcome === 'FD';
     const hasDelivered = !!(formData.delivery_outcome && String(formData.delivery_outcome).trim());
     if (hasDelivered && !isAbortedCheck && isInvalid(formData.delivery_mode)) setError('delivery_mode', 'delivery', 'Delivery type is required');
+    const isLiveBirthCheck = formData.delivery_outcome === 'FT' || formData.delivery_outcome === 'PT';
+    if (isLiveBirthCheck && (!Array.isArray(formData.baby_details) || formData.baby_details.length === 0)) setError('baby_details', 'delivery', 'At least one baby is required for Full Term / Pre-term delivery');
 
     setFormErrors(newErrors);
     if (firstErrorTab) {
