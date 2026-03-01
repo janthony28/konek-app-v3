@@ -232,8 +232,6 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                     has_multiple_gestation: false,
                     has_multiple_miscarriages: false,
                     high_risk_reason: '',
-                    supplements_calcium: [],
-                    calcium_carbonate_completed: false,
                   }),
               });
             }}

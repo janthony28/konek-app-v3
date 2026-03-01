@@ -32,8 +32,17 @@ export function getInitialFormState() {
     lab_logs: [],
     postpartum_logs: [],
 
-    // Calcium carbonate supplementation completion (high-risk only)
+    // Calcium carbonate supplementation completion
     calcium_carbonate_completed: false,
+    calcium_carbonate_date_completed: '',
+
+    // Supplement frequency fields
+    ifa_frequency: '',
+    ifa_frequency_other: '',
+    mms_frequency: '',
+    mms_frequency_other: '',
+    cc_frequency: '',
+    cc_frequency_other: '',
 
     td1: '', td2: '', td3: '', td4: '', td5: '',
     td_completed_previously: false,
