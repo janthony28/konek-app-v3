@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Group, Paper, Stack, Table, Text, Title, Badge, Box, Button, TextInput, ActionIcon, Select, Grid, Checkbox, ThemeIcon } from '@mantine/core';
+import { Group, Paper, Stack, Table, Text, Title, Badge, Box, Button, TextInput, ActionIcon, Select, Grid, ThemeIcon } from '@mantine/core';
 import { UserPlus, Search, Edit, Trash, Filter, RefreshCw } from 'lucide-react';
 import { formatDate } from '../../lib/formatters';
-import { isPatientDue, getLatestPrenatalVisit } from '../../lib/patientHelpers';
+import { isPatientDue, getLatestPrenatalVisit, isPatientPncDue } from '../../lib/patientHelpers';
 import { filterPatientsByReportMonth } from '../../lib/reportMonthFilter';
 import { BATANGAS_BARANGAYS } from '../../lib/constants';
 
@@ -49,19 +49,30 @@ export default function RecordsView({
   const [recordYear, setRecordYear] = useState(String(currentYear));
   const [recordBarangay, setRecordBarangay] = useState('');
   const [recordStatus, setRecordStatus] = useState(() => (filterStatus === 'high_risk' ? 'high_risk' : 'all'));
-  const [dueForVisitOnly, setDueForVisitOnly] = useState(() => filterStatus === 'due');
+  const [dueFilter, setDueFilter] = useState(() => {
+    if (filterStatus === 'due_prenatal') return 'due_prenatal';
+    if (filterStatus === 'due_postnatal') return 'due_postnatal';
+    if (filterStatus === 'due') return 'due_prenatal'; // legacy compat
+    return '';
+  });
 
-  // Sync local filter state when parent changes filterStatus (e.g. dashboard "Due for visit" → Records)
+  // Sync local filter state when parent changes filterStatus (e.g. dashboard card → Records)
   useEffect(() => {
-    if (filterStatus === 'due') {
-      setDueForVisitOnly(true);
+    if (filterStatus === 'due_prenatal') {
+      setDueFilter('due_prenatal');
+      setRecordStatus('all');
+    } else if (filterStatus === 'due_postnatal') {
+      setDueFilter('due_postnatal');
+      setRecordStatus('all');
+    } else if (filterStatus === 'due') {
+      setDueFilter('due_prenatal');
       setRecordStatus('all');
     } else if (filterStatus === 'high_risk') {
       setRecordStatus('high_risk');
-      setDueForVisitOnly(false);
+      setDueFilter('');
     } else if (filterStatus === 'all') {
       setRecordStatus('all');
-      setDueForVisitOnly(false);
+      setDueFilter('');
     }
   }, [filterStatus]);
 
@@ -83,9 +94,10 @@ export default function RecordsView({
   } else if (recordStatus === 'high_risk') {
     displayPatients = displayPatients.filter((p) => p.is_high_risk);
   }
-  if (dueForVisitOnly) {
-    const now = new Date();
+  if (dueFilter === 'due_prenatal') {
     displayPatients = displayPatients.filter((p) => isPatientDue(p));
+  } else if (dueFilter === 'due_postnatal') {
+    displayPatients = displayPatients.filter((p) => isPatientPncDue(p));
   }
 
   const filtered = displayPatients.filter(
@@ -97,15 +109,16 @@ export default function RecordsView({
   let viewTitle = 'Maternal Records';
   if (recordStatus === 'high_risk') viewTitle = 'High Risk Records';
   else if (recordStatus === 'normal') viewTitle = 'Normal Records';
-  if (dueForVisitOnly) viewTitle += ' (Due for visit)';
+  if (dueFilter === 'due_prenatal') viewTitle += ' (Prenatal Due)';
+  else if (dueFilter === 'due_postnatal') viewTitle += ' (Postnatal Due)';
 
-  const hasAnyFilter = useMonthFilter || recordBarangay || recordStatus !== 'all' || dueForVisitOnly;
+  const hasAnyFilter = useMonthFilter || recordBarangay || recordStatus !== 'all' || dueFilter;
   const clearAllFilters = () => {
     setRecordMonth('');
     setRecordYear(String(currentYear));
     setRecordBarangay('');
     setRecordStatus('all');
-    setDueForVisitOnly(false);
+    setDueFilter('');
     setFilterStatus('all');
   };
 
@@ -186,13 +199,19 @@ export default function RecordsView({
               size="xs"
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, xs: 6, sm: 2 }}>
-            <Checkbox
-              label="Due for visit"
-              checked={dueForVisitOnly}
-              onChange={(e) => setDueForVisitOnly(e.currentTarget.checked)}
+          <Grid.Col span={{ base: 12, xs: 6, sm: 3 }}>
+            <Select
+              label="Due for Visit"
+              placeholder="All"
+              data={[
+                { value: 'due_prenatal', label: 'Prenatal Due/Overdue' },
+                { value: 'due_postnatal', label: 'Postnatal Due/Overdue' },
+              ]}
+              value={dueFilter || null}
+              onChange={(v) => { setDueFilter(v ?? ''); setFilterStatus(v || 'all'); }}
+              clearable
+              allowDeselect
               size="xs"
-              mt={22}
             />
           </Grid.Col>
         </Grid>
@@ -203,7 +222,8 @@ export default function RecordsView({
             {recordBarangay && <Badge size="sm" variant="light" color="blue">{recordBarangay}</Badge>}
             {recordStatus === 'normal' && <Badge size="sm" variant="light" color="green">Normal</Badge>}
             {recordStatus === 'high_risk' && <Badge size="sm" variant="light" color="red">High Risk</Badge>}
-            {dueForVisitOnly && <Badge size="sm" variant="light" color="orange">Due / Overdue</Badge>}
+            {dueFilter === 'due_prenatal' && <Badge size="sm" variant="light" color="orange">Prenatal Due/Overdue</Badge>}
+            {dueFilter === 'due_postnatal' && <Badge size="sm" variant="light" color="blue">Postnatal Due/Overdue</Badge>}
             <Text size="xs" c="dimmed" style={{ cursor: 'pointer' }} onClick={clearAllFilters}>Clear all</Text>
           </Group>
         )}
@@ -237,8 +257,8 @@ export default function RecordsView({
               {filtered.map((p) => {
                 const latestVisit = getLatestPrenatalVisit(p.prenatal_visits);
                 const lastVisit = latestVisit ? formatDate(latestVisit.date) : '-';
-                const now = new Date();
                 const isDue = isPatientDue(p);
+                const isPncDue = isPatientPncDue(p);
                 const statusBadges = (
                   <Group gap={6} wrap="wrap">
                     {p.is_high_risk ? (
@@ -252,7 +272,12 @@ export default function RecordsView({
                     )}
                     {isDue && (
                       <Badge size="sm" color="orange" variant="light" radius="md" style={{ fontWeight: 600 }}>
-                        Due/Overdue
+                        Prenatal Due
+                      </Badge>
+                    )}
+                    {isPncDue && (
+                      <Badge size="sm" color="blue" variant="light" radius="md" style={{ fontWeight: 600 }}>
+                        Postnatal Due
                       </Badge>
                     )}
                   </Group>

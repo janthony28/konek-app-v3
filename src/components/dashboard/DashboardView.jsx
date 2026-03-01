@@ -1,7 +1,7 @@
 import { Grid, Group, Paper, SimpleGrid, Stack, Table, Text, Title, Badge, Box, Button, ThemeIcon } from '@mantine/core';
-import { FileText, Activity, Clock, Phone, AlertTriangle } from 'lucide-react';
+import { FileText, Activity, Clock, Phone, AlertTriangle, Baby } from 'lucide-react';
 import { formatDate } from '../../lib/formatters';
-import { isPatientDue, getLatestPrenatalVisit } from '../../lib/patientHelpers';
+import { isPatientDue, getLatestPrenatalVisit, isPatientPncDue, getLatestPncDate } from '../../lib/patientHelpers';
 
 /** Format ISO timestamp to date (MM/DD/YYYY) for created_at/updated_at */
 function formatIsoDate(iso) {
@@ -20,26 +20,33 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
     })
     .slice(0, 5);
   const highRiskCount = safePatients.filter((p) => p.is_high_risk).length;
-  const currentMonth = currentTime.getMonth();
-  const currentYear = currentTime.getFullYear();
   const currentMonthName = currentTime.toLocaleString('default', { month: 'long' });
-  const allDuePatients = safePatients.filter((p) => isPatientDue(p));
-  const duePatients = allDuePatients
+
+  // Prenatal overdue (8ANC)
+  const allDuePrenatal = safePatients.filter((p) => isPatientDue(p));
+  const duePrenatal = allDuePrenatal
     .sort((a, b) => {
       const aLatestVisit = getLatestPrenatalVisit(a.prenatal_visits);
       const bLatestVisit = getLatestPrenatalVisit(b.prenatal_visits);
-
-      // Patients with no visits are most urgent
       if (!aLatestVisit && bLatestVisit) return -1;
       if (aLatestVisit && !bLatestVisit) return 1;
       if (!aLatestVisit && !bLatestVisit) return 0;
-
-      // Sort by last visit date (older = more overdue = higher priority)
       const aDate = aLatestVisit?.date ? new Date(aLatestVisit.date).getTime() : 0;
       const bDate = bLatestVisit?.date ? new Date(bLatestVisit.date).getTime() : 0;
-      return aDate - bDate; // Older dates come first
+      return aDate - bDate;
     })
-    .slice(0, 5); // Limit to top 5
+    .slice(0, 3);
+
+  // Postnatal overdue (4PNC)
+  const allDuePostnatal = safePatients.filter((p) => isPatientPncDue(p));
+  const duePostnatal = allDuePostnatal
+    .sort((a, b) => {
+      const aDate = a.delivery_date ? new Date(a.delivery_date).getTime() : 0;
+      const bDate = b.delivery_date ? new Date(b.delivery_date).getTime() : 0;
+      return aDate - bDate; // Older deliveries first (more overdue)
+    })
+    .slice(0, 3);
+
   const emergencyHotlines = [
     { name: '24/7 EBD Emergency Health Hotline', number: '0999-222-6626' },
     { name: "Mayor's Action Center", number: '723-1511' },
@@ -131,7 +138,8 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
         </Grid.Col>
       </Grid>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+        {/* Total Patients */}
         <Paper
           className="dashboard-card"
           shadow="md"
@@ -177,6 +185,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
           </Group>
         </Paper>
 
+        {/* High-Risk Cases */}
         <Paper
           className="dashboard-card"
           shadow="md"
@@ -222,6 +231,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
           </Group>
         </Paper>
 
+        {/* Prenatal Due/Overdue (8ANC) */}
         <Paper
           className="dashboard-card"
           shadow="md"
@@ -233,7 +243,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
             border: '1px solid rgba(253, 126, 20, 0.1)',
             ...cardStyle
           }}
-          onClick={() => onFilterSelect('due')}
+          onClick={() => onFilterSelect('due_prenatal')}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = hoverStyle.transform;
             e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
@@ -246,10 +256,10 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
           <Group justify="space-between" align="flex-start">
             <div>
               <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ letterSpacing: '0.1em' }}>
-                Due / Overdue
+                Prenatal Due
               </Text>
               <Text size="2.5rem" fw={800} c="orange" style={{ lineHeight: 1.2, marginTop: '4px' }}>
-                {allDuePatients.length}
+                {allDuePrenatal.length}
               </Text>
             </div>
             <ThemeIcon
@@ -266,75 +276,187 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
             </ThemeIcon>
           </Group>
         </Paper>
-      </SimpleGrid>
 
-      {duePatients.length > 0 && (
+        {/* Postnatal Due/Overdue (4PNC) */}
         <Paper
           className="dashboard-card"
           shadow="md"
-          p="lg"
+          p="xl"
           radius="lg"
-          mb="lg"
           style={{
-            background: 'linear-gradient(135deg, #fff9db 0%, #ffffff 100%)',
-            border: '2px solid rgba(253, 126, 20, 0.2)',
-            boxShadow: '0 4px 6px -1px rgba(253, 126, 20, 0.15), 0 2px 4px -1px rgba(253, 126, 20, 0.1)',
+            background: 'linear-gradient(135deg, #e7f5ff 0%, #ffffff 100%)',
+            borderLeft: '4px solid #228be6',
+            border: '1px solid rgba(34, 139, 230, 0.1)',
+            ...cardStyle
+          }}
+          onClick={() => onFilterSelect('due_postnatal')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = hoverStyle.transform;
+            e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
           }}
         >
-          <Group mb="md" gap="xs">
-            <ThemeIcon color="orange" variant="light" size="md" radius="md">
-              <AlertTriangle size={18} />
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ letterSpacing: '0.1em' }}>
+                Postnatal Due
+              </Text>
+              <Text size="2.5rem" fw={800} c="blue" style={{ lineHeight: 1.2, marginTop: '4px' }}>
+                {allDuePostnatal.length}
+              </Text>
+            </div>
+            <ThemeIcon
+              color="blue"
+              variant="light"
+              size="xl"
+              radius="md"
+              style={{
+                opacity: 0.8,
+                boxShadow: '0 2px 8px rgba(34, 139, 230, 0.2)',
+              }}
+            >
+              <Baby size={32} />
             </ThemeIcon>
-            <Text fw={700} c="orange.9" size="lg">
-              Upcoming Visits Required ({currentMonthName})
-            </Text>
           </Group>
-          <Text size="sm" mb="md" c="orange.8" style={{ lineHeight: 1.6 }}>
-            The following patients need to be contacted for their monthly checkup:
-          </Text>
-          <Grid>
-            {duePatients.map((p) => {
-              const latestVisit = getLatestPrenatalVisit(p.prenatal_visits);
-              const lastVisitText = latestVisit ? formatDate(latestVisit.date) : 'No visits yet';
-              return (
-                <Grid.Col key={p.id} span={{ base: 12, sm: 6, md: 4 }}>
-                  <Paper
-                    withBorder
-                    p="md"
-                    bg="white"
-                    shadow="sm"
-                    radius="md"
-                    style={{
-                      border: '1px solid rgba(253, 126, 20, 0.15)',
-                      transition: 'all 0.2s ease',
-                    }}
-                    className="hover-lift"
-                  >
-                    <Text size="md" fw={700} c="dark" mb={4}>{p.last_name}, {p.first_name}</Text>
-                    <Text size="xs" c="dimmed">{p.barangay ? `Brgy: ${p.barangay}` : ''}</Text>
-                    {p.contact_no && (
-                      <Text size="xs" c="dimmed" mb={4}>📞 {p.contact_no}</Text>
-                    )}
-                    {!p.contact_no && <Text size="xs" c="dimmed" mb={4} fs="italic">No contact number</Text>}
-                    <Badge color="orange" variant="light" size="sm" radius="md" style={{ fontWeight: 600 }}>
-                      Last Visit: {lastVisitText}
-                    </Badge>
-                  </Paper>
-                </Grid.Col>
-              );
-            })}
-          </Grid>
-          <Button
-            variant="subtle"
-            color="orange"
-            fullWidth
-            mt="md"
-            onClick={() => onFilterSelect('due')}
-            style={{ fontWeight: 600 }}
-          >
-            View All Due Patients
-          </Button>
         </Paper>
+      </SimpleGrid>
+
+      {/* Prenatal & Postnatal upcoming visits — side by side */}
+      {(duePrenatal.length > 0 || duePostnatal.length > 0) && (
+        <Grid>
+          {/* Prenatal */}
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper
+              className="dashboard-card"
+              shadow="md"
+              p="md"
+              radius="lg"
+              h="100%"
+              style={{
+                background: 'linear-gradient(135deg, #fff9db 0%, #ffffff 100%)',
+                border: '2px solid rgba(253, 126, 20, 0.2)',
+                boxShadow: '0 4px 6px -1px rgba(253, 126, 20, 0.15), 0 2px 4px -1px rgba(253, 126, 20, 0.1)',
+              }}
+            >
+              <Group mb="xs" gap="xs">
+                <ThemeIcon color="orange" variant="light" size="md" radius="md">
+                  <AlertTriangle size={16} />
+                </ThemeIcon>
+                <Text fw={700} c="orange.9" size="md">Due for Prenatal Visit ({allDuePrenatal.length})</Text>
+              </Group>
+              {duePrenatal.length === 0 ? (
+                <Text size="xs" c="dimmed" fs="italic" py="sm">No prenatal overdue patients</Text>
+              ) : (
+                <Stack gap={6}>
+                  {duePrenatal.map((p) => {
+                    const latestVisit = getLatestPrenatalVisit(p.prenatal_visits);
+                    const lastVisitText = latestVisit ? formatDate(latestVisit.date) : 'No visits yet';
+                    const ancCount = Array.isArray(p.prenatal_visits) ? p.prenatal_visits.length : 0;
+                    return (
+                      <Paper
+                        key={p.id}
+                        withBorder
+                        p="xs"
+                        bg="white"
+                        radius="sm"
+                        style={{ border: '1px solid rgba(253, 126, 20, 0.15)' }}
+                      >
+                        <Group justify="space-between" wrap="nowrap" gap={8}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <Text size="sm" fw={700} c="dark" truncate>{p.last_name}, {p.first_name}</Text>
+                            <Text size="xs" c="dimmed" truncate>
+                              {p.barangay ? `Brgy: ${p.barangay}` : ''}
+                              {p.contact_no ? ` · 📞 ${p.contact_no}` : ''}
+                            </Text>
+                          </div>
+                          <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+                            <Badge color="orange" variant="light" size="sm" radius="md" style={{ fontWeight: 600 }}>
+                              ANC: {ancCount}/8
+                            </Badge>
+                            <Badge color="yellow" variant="light" size="sm" radius="md" style={{ fontWeight: 600 }}>
+                              Last: {lastVisitText}
+                            </Badge>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
+              <Button variant="subtle" color="orange" fullWidth mt="xs" size="xs" onClick={() => onFilterSelect('due_prenatal')} style={{ fontWeight: 600 }}>
+                View All Prenatal Due Patients
+              </Button>
+            </Paper>
+          </Grid.Col>
+
+          {/* Postnatal */}
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper
+              className="dashboard-card"
+              shadow="md"
+              p="md"
+              radius="lg"
+              h="100%"
+              style={{
+                background: 'linear-gradient(135deg, #e7f5ff 0%, #ffffff 100%)',
+                border: '2px solid rgba(34, 139, 230, 0.2)',
+                boxShadow: '0 4px 6px -1px rgba(34, 139, 230, 0.15), 0 2px 4px -1px rgba(34, 139, 230, 0.1)',
+              }}
+            >
+              <Group mb="xs" gap="xs">
+                <ThemeIcon color="blue" variant="light" size="md" radius="md">
+                  <Baby size={16} />
+                </ThemeIcon>
+                <Text fw={700} c="blue.9" size="md">Due for Postnatal Visit ({allDuePostnatal.length})</Text>
+              </Group>
+              {duePostnatal.length === 0 ? (
+                <Text size="xs" c="dimmed" fs="italic" py="sm">No postnatal overdue patients</Text>
+              ) : (
+                <Stack gap={6}>
+                  {duePostnatal.map((p) => {
+                    const contactsDone = [p.pnc_date_1, p.pnc_date_2, p.pnc_date_3, p.pnc_date_4].filter(Boolean).length;
+                    const lastPnc = getLatestPncDate(p);
+                    const lastPncText = lastPnc ? formatDate(lastPnc) : 'No PNC yet';
+                    return (
+                      <Paper
+                        key={p.id}
+                        withBorder
+                        p="xs"
+                        bg="white"
+                        radius="sm"
+                        style={{ border: '1px solid rgba(34, 139, 230, 0.15)' }}
+                      >
+                        <Group justify="space-between" wrap="nowrap" gap={8}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <Text size="sm" fw={700} c="dark" truncate>{p.last_name}, {p.first_name}</Text>
+                            <Text size="xs" c="dimmed" truncate>
+                              {p.barangay ? `Brgy: ${p.barangay}` : ''}
+                              {p.contact_no ? ` · 📞 ${p.contact_no}` : ''}
+                            </Text>
+                          </div>
+                          <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+                            <Badge color="blue" variant="light" size="sm" radius="md" style={{ fontWeight: 600 }}>
+                              PNC: {contactsDone}/4
+                            </Badge>
+                            <Badge color="cyan" variant="light" size="sm" radius="md" style={{ fontWeight: 600 }}>
+                              Last: {lastPncText}
+                            </Badge>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
+              <Button variant="subtle" color="blue" fullWidth mt="xs" size="xs" onClick={() => onFilterSelect('due_postnatal')} style={{ fontWeight: 600 }}>
+                View All Postnatal Due Patients
+              </Button>
+            </Paper>
+          </Grid.Col>
+        </Grid>
       )}
 
       <Paper

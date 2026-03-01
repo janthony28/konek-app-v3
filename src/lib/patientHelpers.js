@@ -88,6 +88,70 @@ export function isPatientDue(p) {
   return currentAOG >= targetWindow.min;
 }
 
+/**
+ * Get the latest PNC contact date from the flat pnc_date_1..4 fields.
+ * @returns {string|null} The latest date string, or null if none.
+ */
+export function getLatestPncDate(p) {
+  const dates = [p.pnc_date_1, p.pnc_date_2, p.pnc_date_3, p.pnc_date_4].filter(Boolean);
+  if (dates.length === 0) return null;
+  return dates.sort().pop();
+}
+
+/**
+ * True if patient has a live-birth delivery but is overdue for their next PNC contact.
+ *
+ * 4PNC schedule (days after delivery_date):
+ *   Contact 1 — within 24 hours (≥ 1 day overdue)
+ *   Contact 2 — day 3            (≥ 3 days)
+ *   Contact 3 — 7–14 days        (≥ 7 days)
+ *   Contact 4 — 6 weeks          (≥ 42 days)
+ */
+export function isPatientPncDue(p) {
+  const name = `${p.last_name}, ${p.first_name}`;
+
+  // Must have a delivery date and a live-birth outcome (FT or PT)
+  if (!p.delivery_date) {
+    console.log(`[PNC-DUE] ${name}: SKIPPED — no delivery date`);
+    return false;
+  }
+  const outcome = p.delivery_outcome;
+  if (outcome !== 'FT' && outcome !== 'PT') {
+    console.log(`[PNC-DUE] ${name}: SKIPPED — outcome is ${outcome}, not live birth`);
+    return false;
+  }
+
+  // Count recorded PNC contacts (from flat fields stored in DB)
+  const pncDates = [p.pnc_date_1, p.pnc_date_2, p.pnc_date_3, p.pnc_date_4].filter(Boolean);
+  const contactsDone = pncDates.length;
+
+  if (contactsDone >= 4) {
+    console.log(`[PNC-DUE] ${name}: SKIPPED — 4PNC complete (${contactsDone} contacts)`);
+    return false;
+  }
+
+  // Calculate days since delivery
+  const deliveryDate = new Date(p.delivery_date);
+  if (Number.isNaN(deliveryDate.getTime())) {
+    console.log(`[PNC-DUE] ${name}: SKIPPED — invalid delivery date`);
+    return false;
+  }
+
+  const today = new Date();
+  const daysSinceDelivery = Math.floor((today - deliveryDate) / (1000 * 60 * 60 * 24));
+
+  // Determine how many contacts should have happened by now
+  const PNC_THRESHOLDS = [1, 3, 7, 42]; // days when each contact becomes due
+  let expectedContacts = 0;
+  for (const threshold of PNC_THRESHOLDS) {
+    if (daysSinceDelivery >= threshold) expectedContacts++;
+  }
+
+  const isDue = contactsDone < expectedContacts;
+  console.log(`[PNC-DUE] ${name}: deliveryDate=${p.delivery_date}, daysSince=${daysSinceDelivery}, contactsDone=${contactsDone}, expected=${expectedContacts}, result=${isDue ? 'DUE' : 'NOT DUE'}`);
+  return isDue;
+}
+
 export function getAgeGroup(age) {
   if (!age) return '';
   if (age >= 1 && age <= 9) return '1-9 y.o';
