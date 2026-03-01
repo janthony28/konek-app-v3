@@ -25,13 +25,24 @@ export function getLatestPrenatalVisit(prenatalVisits) {
 
 /** True if patient has no delivery and (no visits or last visit not in current month/year). */
 export function isPatientDue(p) {
-  if (p.delivery_date || p.delivery_outcome) return false;
+  const name = `${p.last_name}, ${p.first_name}`;
 
-  if (!p.lmp) return false;
+  if (p.delivery_date || p.delivery_outcome) {
+    console.log(`[DUE-CHECK] ${name}: SKIPPED — has delivery (date: ${p.delivery_date}, outcome: ${p.delivery_outcome})`);
+    return false;
+  }
+
+  if (!p.lmp) {
+    console.log(`[DUE-CHECK] ${name}: SKIPPED — no LMP`);
+    return false;
+  }
 
   const today = new Date();
   const currentAOG = getRawWeeksAOG(p.lmp, today.toISOString());
-  if (currentAOG === null) return false;
+  if (currentAOG === null) {
+    console.log(`[DUE-CHECK] ${name}: SKIPPED — could not compute AOG (LMP: ${p.lmp})`);
+    return false;
+  }
 
   const lastVisit = getLatestPrenatalVisit(p.prenatal_visits);
 
@@ -67,6 +78,9 @@ export function isPatientDue(p) {
         targetWindow = { min: lastVisitAOG + 1, max: lastVisitAOG + 1 };
       }
     }
+    console.log(`[DUE-CHECK] ${name}: LMP=${p.lmp}, currentAOG=${currentAOG}wks, lastVisitDate=${lastVisit.date}, lastVisitAOG=${getRawWeeksAOG(p.lmp, lastVisit.date)}wks, targetWindow=${targetWindow.min}-${targetWindow.max}, result=${currentAOG >= targetWindow.min ? 'DUE' : 'NOT DUE'}`);
+  } else {
+    console.log(`[DUE-CHECK] ${name}: LMP=${p.lmp}, currentAOG=${currentAOG}wks, NO VISITS, targetWindow=${targetWindow.min}-${targetWindow.max}, result=${currentAOG >= targetWindow.min ? 'DUE' : 'NOT DUE'}`);
   }
 
   // Due / Overdue if current AOG has exactly reached the start of the target window (or gone beyond it)

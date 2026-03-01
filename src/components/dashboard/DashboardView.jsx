@@ -248,7 +248,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
                 Due / Overdue
               </Text>
               <Text size="2.5rem" fw={800} c="orange" style={{ lineHeight: 1.2, marginTop: '4px' }}>
-                {duePatients.length}
+                {allDuePatients.length}
               </Text>
             </div>
             <ThemeIcon
