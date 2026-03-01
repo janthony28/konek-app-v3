@@ -168,15 +168,24 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                     { value: 'CS', label: 'CS - Cesarean Section' },
                     { value: 'VD', label: 'VD - Vaginal Delivery' },
                     { value: 'CVCD', label: 'CVCD - Combined Vaginal-Cesarean' },
+                    { value: 'Others', label: 'Others (Please Specify)' },
                   ].map(({ value, label }) => (
                     <Checkbox
                       key={value}
                       disabled={isAborted}
                       checked={(formData.delivery_mode || '') === value}
                       label={label}
-                      onChange={() => setFormData({ ...formData, delivery_mode: (formData.delivery_mode || '') === value ? '' : value })}
+                      onChange={() => setFormData({ ...formData, delivery_mode: (formData.delivery_mode || '') === value ? '' : value, ...(value !== 'Others' ? { delivery_mode_specify: '' } : {}) })}
                     />
                   ))}
+                  {formData.delivery_mode === 'Others' && (
+                    <TextInput
+                      disabled={isAborted}
+                      placeholder="Please specify delivery type..."
+                      value={formData.delivery_mode_specify || ''}
+                      onChange={(e) => setFormData({ ...formData, delivery_mode_specify: e.target.value.toUpperCase() })}
+                    />
+                  )}
                 </Stack>
               </Input.Wrapper>
               <Select

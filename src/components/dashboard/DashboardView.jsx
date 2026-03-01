@@ -44,6 +44,7 @@ export default function DashboardView({ patients = [], currentTime, handleAddCli
     { name: '24/7 EBD Emergency Health Hotline', number: '0999-222-6626' },
     { name: "Mayor's Action Center", number: '723-1511' },
     { name: 'Batangas Medical Center', number: '723-0911' },
+    { name: 'City Health Office (CHO)', number: '(043) 723 3103' },
   ];
 
   const cardStyle = {
