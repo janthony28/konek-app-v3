@@ -884,6 +884,7 @@ function MainApp({ session, onLogout }) {
       delete rawPayload.delivery_attendant_specify;
       delete rawPayload.delivery_place_specify;
       delete rawPayload.pnc_contacts;
+      delete rawPayload.calcium_carbonate_date_completed;
       if (isEditing) delete rawPayload.created_by;
 
       // Persist baby_details for reporting; empty for non–live births
