@@ -96,6 +96,12 @@ export default function SupplementationTab({
           <Paper withBorder h="100%" style={{ opacity: totalIFA > 0 ? 0.5 : 1, pointerEvents: totalIFA > 0 ? 'none' : 'auto', ...(editingSupp?.type === 'MMS' ? { borderLeft: '4px solid var(--mantine-color-green-6)', backgroundColor: 'var(--mantine-color-green-0)' } : {}) }}>
             <Box bg={editingSupp?.type === 'MMS' ? 'green.1' : totalIFA > 0 ? 'gray.1' : 'teal.0'} p="xs" style={{ borderBottom: '1px solid #eee' }}><Text fw={700} size="sm" c={editingSupp?.type === 'MMS' ? 'green.8' : 'teal.9'}>{editingSupp?.type === 'MMS' ? `Editing MMS log ${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_mms.length}` : 'MMS (Micronutrients)'}</Text></Box>
             <Stack p="sm">
+              <Text size="xs" c="dimmed">Completed?</Text>
+              <Group gap="md">
+                <Checkbox label="Yes" checked={!!formData.mms_completed} onChange={() => setFormData({ ...formData, mms_completed: true })} />
+                <Checkbox label="No" checked={!formData.mms_completed} onChange={() => setFormData({ ...formData, mms_completed: false })} />
+              </Group>
+              <Divider my={4} />
               <Select
                 label="Frequency"
                 placeholder="Select frequency"

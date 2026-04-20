@@ -36,6 +36,9 @@ export function getInitialFormState() {
     calcium_carbonate_completed: false,
     calcium_carbonate_date_completed: '',
 
+    // MMS supplementation completion
+    mms_completed: false,
+
     // Supplement frequency fields
     ifa_frequency: '',
     ifa_frequency_other: '',
