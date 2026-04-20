@@ -38,6 +38,11 @@ export async function exportToExcel(patients, options = {}) {
     del_vaginal: initCounts(), del_cs: initCounts(), del_cvcd: initCounts(),
     outcome_ft: initCounts(), outcome_pt: initCounts(), outcome_fd: initCounts(), outcome_ab: initCounts(),
     pnc4: initCounts(), postpartum_ifa: initCounts(), vit_a: initCounts(),
+    // Resident / Trans-In / Trans-Out breakdowns
+    anc8_resident: initCounts(), anc8_transin: initCounts(),
+    tracked_resident: initCounts(), tracked_transin: initCounts(), tracked_transout_anc: initCounts(),
+    pnc4_resident: initCounts(), pnc4_transin: initCounts(),
+    pnc_due_resident: initCounts(), pnc_due_transin: initCounts(), pnc_due_transout: initCounts(),
   };
   function getLab(p) {
     const logs = p.lab_logs || [];
@@ -57,6 +62,10 @@ export async function exportToExcel(patients, options = {}) {
       else if (age >= 20 && age <= 49) g = '20-49';
       if (!g) return;
       const inc = (key) => { if (data[key]) { data[key][g]++; data[key].total++; } };
+      // Transfer status helpers
+      const isTransIn = p.is_transfer === true && p.transfer_type === 'Trans-In';
+      const isTransOut = p.is_transfer === true && p.transfer_type === 'Trans-Out';
+      const isResident = !isTransIn && !isTransOut;
       const visits = p.prenatal_visits || [];
       const firstTri = [...visits].reverse().find((v) => v.trimester === '1st Trimester');
       if (firstTri) {
@@ -77,9 +86,18 @@ export async function exportToExcel(patients, options = {}) {
       if (lab.cbc_positive) inc('anemia_positive');
       if (lab.gd_screened) inc('gd_screen');
       if (lab.gd_positive) inc('gd_positive');
+      // 8ANC resident/trans-in/trans-out tracking
+      const ancCount = (p.prenatal_visits || []).length;
+      if (isResident) inc('tracked_resident');
+      if (isTransIn) inc('tracked_transin');
+      if (isTransOut) inc('tracked_transout_anc');
       if (p.delivery_date) {
         inc('deliveries');
-        if ((p.prenatal_visits || []).length >= 8) inc('anc8_delivery');
+        if (ancCount >= 8) {
+          inc('anc8_delivery');
+          if (isResident) inc('anc8_resident');
+          if (isTransIn) inc('anc8_transin');
+        }
         const isLiveBirth = ['FT', 'PT'].includes(p.delivery_outcome);
         const babies = isLiveBirth && Array.isArray(p.baby_details) && p.baby_details.length > 0 ? p.baby_details : isLiveBirth ? [{ category: p.birth_weight_category || '', sex: p.birth_sex || '', status: 'Live Birth' }] : [];
         const liveBabies = babies.filter((b) => (b.status || 'Live Birth') === 'Live Birth');
@@ -108,11 +126,26 @@ export async function exportToExcel(patients, options = {}) {
       }
       const pncDates = [p.pnc_date_1, p.pnc_date_2, p.pnc_date_3, p.pnc_date_4].filter(Boolean).length;
       const pncContacts = Array.isArray(p.pnc_contacts) ? p.pnc_contacts.length : 0;
-      if (pncDates >= 4 || pncContacts >= 4 || p.is_4pnc_completed === 'Yes' || p.is_4pnc_completed === 'true' || p.is_4pnc_completed === true) inc('pnc4');
+      const is4Pnc = pncDates >= 4 || pncContacts >= 4 || p.is_4pnc_completed === 'Yes' || p.is_4pnc_completed === 'true' || p.is_4pnc_completed === true;
+      if (is4Pnc) {
+        inc('pnc4');
+        if (isResident) inc('pnc4_resident');
+        if (isTransIn) inc('pnc4_transin');
+      }
+      // PNC due tracking (all patients with a delivery are due for PNC)
+      if (p.delivery_date) {
+        if (isResident) inc('pnc_due_resident');
+        if (isTransIn) inc('pnc_due_transin');
+        if (isTransOut) inc('pnc_due_transout');
+      }
       if ((p.postpartum_ifa_count || 0) >= 90 || p.is_postpartum_ifa_completed === 'Yes' || p.is_postpartum_ifa_completed === 'true' || p.is_postpartum_ifa_completed === true) inc('postpartum_ifa');
       if (p.vit_a_completed_date || p.is_vit_a_completed === 'Yes' || p.is_vit_a_completed === 'true' || p.is_vit_a_completed === true) inc('vit_a');
     } catch (err) { console.error('Error processing patient for FHSIS:', p, err); }
   });
+  // Compute 1b totals (b1 + b2) for both sections
+  const sumKeys = (a, b) => { const result = initCounts(); ['10-14', '15-19', '20-49', 'total'].forEach(g => { result[g] = (data[a]?.[g] || 0) + (data[b]?.[g] || 0); }); return result; };
+  data.tracked_total = sumKeys('tracked_resident', 'tracked_transin');
+  data.pnc_due_total = sumKeys('pnc_due_resident', 'pnc_due_transin');
   const num = (key, g) => { const d = data[key]; if (!d) return ''; const v = g ? d[g] : d.total; return v !== undefined && v !== null ? v : ''; };
 
   /* ── layout helpers ─────────────────────────────────────────────── */
@@ -156,12 +189,12 @@ export async function exportToExcel(patients, options = {}) {
   writeColHeaders();
   dual('1. 8ANC', null, '4. Prenatal Supplementation', null, true);
   dual('1a. No. of Women who delivered and completed at least 8ANC =(a1+a2)', 'anc8_delivery', '4a. Number of pregnant women who completed the dose of Iron with Folic Acid supplementation', 'iron');
-  dual('   a1. No. of Women who delivered and provided 1st to 8th ANC on schedule (Resident)', null, '4b. No. of pregnant women who completed the dose Multiple Micronutrient Supplementation', 'mms');
-  dual('   a2. No. of Women who delivered and completed at least 8ANC / TRANS-IN from other LGUs', null, '4c. No. of pregnant women who completed this dose of Calcium carbonate', 'calcium');
-  dual('1b. No. of Women who delivered and who were tracked during pregnancy =(b1+b2)', null, '', null);
-  dual('   b1. No. of Women who delivered and who were tracked during pregnancy (Resident)', null, '5. Anemia Screening', null, false);
-  dual('   b2. No. of TRANS-IN from other LGUs', null, '5a. No. of pregnant women screened for Anemia', 'anemia_screen');
-  dual('   b3. No. of TRANS-OUT (with MOV) before completing 8ANC', null, '5b. No. of pregnant women diagnosed with Anemia', 'anemia_positive');
+  dual('   a1. No. of Women who delivered and provided 1st to 8th ANC on schedule (Resident)', 'anc8_resident', '4b. No. of pregnant women who completed the dose Multiple Micronutrient Supplementation', 'mms');
+  dual('   a2. No. of Women who delivered and completed at least 8ANC / TRANS-IN from other LGUs', 'anc8_transin', '4c. No. of pregnant women who completed this dose of Calcium carbonate', 'calcium');
+  dual('1b. No. of Women who delivered and who were tracked during pregnancy =(b1+b2)', 'tracked_total', '', null);
+  dual('   b1. No. of Women who delivered and who were tracked during pregnancy (Resident)', 'tracked_resident', '5. Anemia Screening', null, false);
+  dual('   b2. No. of TRANS-IN from other LGUs', 'tracked_transin', '5a. No. of pregnant women screened for Anemia', 'anemia_screen');
+  dual('   b3. No. of TRANS-OUT (with MOV) before completing 8ANC', 'tracked_transout_anc', '5b. No. of pregnant women diagnosed with Anemia', 'anemia_positive');
   dual('', null, '6. Gestational Diabetes Screening', null, false);
   dual('2. No. of pregnant women assessed for nutritional status during the first trimester', null, '6a. No. of pregnant women screened for Gestational Diabetes Mellitus', 'gd_screen');
   dual('2a. Normal BMI', 'bmiNormal', '6b. No. of pregnant women tested positive for Gestational Diabetes Mellitus', 'gd_positive');
@@ -222,12 +255,12 @@ export async function exportToExcel(patients, options = {}) {
   writeColHeaders();
   dual('1. 4PNC', null, '2. Postpartum Supplementation', null, true);
   dual('1a. Total No. of women who delivered and completed at least 4PNC =(a1+a2)', 'pnc4', '2a. Number of postpartum women who completed the dose of Iron with Folic Acid Supplementation', 'postpartum_ifa');
-  dual('   a1. No. of women who delivered and provided 1st to 4th PNC on schedule (Resident)', null, '2b. Number of postpartum women who completed the dose of Vitamin A supplementation', 'vit_a');
-  dual('   a2. No. of women delivered and completed at least 4PNC', null, '', null);
-  dual('1b. Total No. of women due for PNC =(b1+b2)', null, '3. BP measurement', null, true);
-  dual('   b1. No. of women due for PNC (Resident)', null, '3a. No. of postpartum women who had their BP measured during each of their antenatal care visit', null);
-  dual('   b2. No. of TRANS-IN from other LGUs due for PNC', null, '3b. No. of postpartum women with high BP or danger signs who were referred to a higher-level facility', null);
-  dual('   b3. No. of TRANS-OUT (with MOV) before completing 4PNC', null, '', null);
+  dual('   a1. No. of women who delivered and provided 1st to 4th PNC on schedule (Resident)', 'pnc4_resident', '2b. Number of postpartum women who completed the dose of Vitamin A supplementation', 'vit_a');
+  dual('   a2. No. of women delivered and completed at least 4PNC / TRANS-IN from other LGUs', 'pnc4_transin', '', null);
+  dual('1b. Total No. of women due for PNC =(b1+b2)', 'pnc_due_total', '3. BP measurement', null, true);
+  dual('   b1. No. of women due for PNC (Resident)', 'pnc_due_resident', '3a. No. of postpartum women who had their BP measured during each of their antenatal care visit', null);
+  dual('   b2. No. of TRANS-IN from other LGUs due for PNC', 'pnc_due_transin', '3b. No. of postpartum women with high BP or danger signs who were referred to a higher-level facility', null);
+  dual('   b3. No. of TRANS-OUT (with MOV) before completing 4PNC', 'pnc_due_transout', '', null);
 
   sheet.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
   const buffer = await workbook.xlsx.writeBuffer();
