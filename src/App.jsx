@@ -190,7 +190,7 @@ function MainApp({ session, onLogout }) {
 
   const initialFormState = getInitialFormState();
   const [formData, setFormData] = useState(initialFormState);
-  const [newVisit, setNewVisit] = useState({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+  const [newVisit, setNewVisit] = useState({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
   const [newSupp, setNewSupp] = useState({ type: 'IFA', date: '', count: '' });
   const [newLab, setNewLab] = useState({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
   const [newPostpartumLog, setNewPostpartumLog] = useState({ date: '', count: '', remarks: '' });
@@ -198,7 +198,7 @@ function MainApp({ session, onLogout }) {
   const [editingSupp, setEditingSupp] = useState(null); // { type: 'IFA'|'MMS', index }
   const [editingLabIndex, setEditingLabIndex] = useState(null);
   const [editingPostpartumIndex, setEditingPostpartumIndex] = useState(null);
-  const [newPncContact, setNewPncContact] = useState({ date: '' });
+  const [newPncContact, setNewPncContact] = useState({ date: '', bp_systolic: '', bp_diastolic: '' });
   const [editingPncContactIndex, setEditingPncContactIndex] = useState(null);
 
   const [allowedBarangays, setAllowedBarangays] = useState([]);
@@ -438,7 +438,7 @@ function MainApp({ session, onLogout }) {
     const rawWeeks = getRawWeeksAOG(formData.lmp, newVisit.date);
     if (rawWeeks !== null && rawWeeks > 43) {
       notifications.show({ title: 'Invalid visit date', message: 'Visit date cannot be beyond 43 weeks AOG. Please choose another date.', color: 'red' });
-      setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+      setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
       return;
     }
     if (newVisit.trimester === '1st Trimester' && (newVisit.weight === '' || newVisit.weight == null)) return notifications.show({ title: 'Required', message: 'Weight is required for 1st trimester visits.', color: 'red' });
@@ -468,20 +468,20 @@ function MainApp({ session, onLogout }) {
     } else {
       setFormData({ ...formData, prenatal_visits: [...formData.prenatal_visits, newVisit] });
     }
-    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
   };
   const removeVisit = (i) => {
     setFormData({ ...formData, prenatal_visits: formData.prenatal_visits.filter((_, idx) => idx !== i) });
-    if (editingVisitIndex === i) { setEditingVisitIndex(null); setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' }); }
+    if (editingVisitIndex === i) { setEditingVisitIndex(null); setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' }); }
   };
   const startEditVisit = (i) => {
     const v = formData.prenatal_visits[i] || {};
-    setNewVisit({ date: v.date || '', aog: v.aog || '', trimester: v.trimester || '', weight: v.weight || '', height: v.height || '', bmi: v.bmi || '', bmi_category: v.bmi_category || '', remarks: v.remarks || '' });
+    setNewVisit({ date: v.date || '', aog: v.aog || '', trimester: v.trimester || '', weight: v.weight || '', height: v.height || '', bmi: v.bmi || '', bmi_category: v.bmi_category || '', bp_systolic: v.bp_systolic || '', bp_diastolic: v.bp_diastolic || '', remarks: v.remarks || '' });
     setEditingVisitIndex(i);
   };
   const cancelEditVisit = () => {
     setEditingVisitIndex(null);
-    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
   };
 
   /** When editing a log (supplement or postpartum), get date bounds from its position in chronological order. */
@@ -657,7 +657,7 @@ function MainApp({ session, onLogout }) {
   };
 
   const handlePncContactDateChange = (e) => {
-    setNewPncContact({ ...newPncContact, date: e.target.value });
+    setNewPncContact((prev) => ({ ...prev, date: e.target.value }));
   };
 
   const addPncContact = () => {
@@ -680,7 +680,7 @@ function MainApp({ session, onLogout }) {
         return;
       }
     }
-    const contact = { date: newPncContact.date };
+    const contact = { date: newPncContact.date, bp_systolic: newPncContact.bp_systolic, bp_diastolic: newPncContact.bp_diastolic };
     if (editingPncContactIndex != null) {
       const next = [...(formData.pnc_contacts || [])];
       next[editingPncContactIndex] = contact;
@@ -689,20 +689,20 @@ function MainApp({ session, onLogout }) {
     } else {
       setFormData({ ...formData, pnc_contacts: [...(formData.pnc_contacts || []), contact] });
     }
-    setNewPncContact({ date: '' });
+    setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
   };
   const removePncContact = (i) => {
     setFormData({ ...formData, pnc_contacts: (formData.pnc_contacts || []).filter((_, idx) => idx !== i) });
-    if (editingPncContactIndex === i) { setEditingPncContactIndex(null); setNewPncContact({ date: '' }); }
+    if (editingPncContactIndex === i) { setEditingPncContactIndex(null); setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' }); }
   };
   const startEditPncContact = (i) => {
     const c = (formData.pnc_contacts || [])[i] || {};
-    setNewPncContact({ date: c.date || '' });
+    setNewPncContact({ date: c.date || '', bp_systolic: c.bp_systolic || '', bp_diastolic: c.bp_diastolic || '' });
     setEditingPncContactIndex(i);
   };
   const cancelEditPncContact = () => {
     setEditingPncContactIndex(null);
-    setNewPncContact({ date: '' });
+    setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
   };
 
   const handleAddClick = () => {
@@ -720,10 +720,10 @@ function MainApp({ session, onLogout }) {
     setEditingPostpartumIndex(null);
     setEditingPncContactIndex(null);
     setNewSupp({ type: 'IFA', date: '', count: '' });
-    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
     setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
-    setNewPncContact({ date: '' });
+    setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
     open();
   };
 
@@ -785,10 +785,10 @@ function MainApp({ session, onLogout }) {
     setEditingPostpartumIndex(null);
     setEditingPncContactIndex(null);
     setNewSupp({ type: 'IFA', date: '', count: '' });
-    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', remarks: '' });
+    setNewVisit({ date: '', aog: '', trimester: '', weight: '', height: '', bmi: '', bmi_category: '', bp_systolic: '', bp_diastolic: '', remarks: '' });
     setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
-    setNewPncContact({ date: '' });
+    setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
     open();
   };
 

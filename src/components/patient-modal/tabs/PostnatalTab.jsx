@@ -2,6 +2,15 @@ import { Paper, Box, Stack, Group, Grid, Input, NumberInput, Select, Button, Tab
 import { ArrowLeft, Trash, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
+/** Classify BP as High if systolic >= 140 OR diastolic >= 90 */
+function getBpStatus(systolic, diastolic) {
+  const s = Number(systolic);
+  const d = Number(diastolic);
+  if (!s && !d) return '';
+  if (s >= 140 || d >= 90) return 'High';
+  return 'Normal';
+}
+
 export default function PostnatalTab({
   formData,
   setFormData,
@@ -29,6 +38,8 @@ export default function PostnatalTab({
   const isPostpartumIfaCompleted = postpartumProgress >= 100;
   const isVitACompleted = !!(formData.vit_a_completed_date && String(formData.vit_a_completed_date).trim());
 
+  const pncBpStatus = getBpStatus(newPncContact.bp_systolic, newPncContact.bp_diastolic);
+
   return (
     <Grid grow>
       <Grid.Col span={5}>
@@ -44,6 +55,44 @@ export default function PostnatalTab({
                 <Input type="date" max={new Date().toISOString().split('T')[0]} value={newPncContact.date || ''} onChange={handlePncContactDateChange} />
               </Input.Wrapper>
             </Group>
+            <Grid align="end">
+              <Grid.Col span={5}>
+                <NumberInput
+                  label="Systolic"
+                  placeholder="e.g. 120"
+                  value={newPncContact.bp_systolic}
+                  onChange={(val) => setNewPncContact((prev) => ({ ...prev, bp_systolic: val }))}
+                  min={0}
+                  max={300}
+                  size="xs"
+                />
+              </Grid.Col>
+              <Grid.Col span={1} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingBottom: 6 }}>
+                <Text size="md" fw={700} c="dimmed">/</Text>
+              </Grid.Col>
+              <Grid.Col span={5}>
+                <NumberInput
+                  label="Diastolic"
+                  placeholder="e.g. 80"
+                  value={newPncContact.bp_diastolic}
+                  onChange={(val) => setNewPncContact((prev) => ({ ...prev, bp_diastolic: val }))}
+                  min={0}
+                  max={200}
+                  size="xs"
+                />
+              </Grid.Col>
+            </Grid>
+            {pncBpStatus && (
+              <Badge
+                size="sm"
+                radius="sm"
+                color={pncBpStatus === 'High' ? 'red' : 'green'}
+                variant="light"
+                fullWidth
+              >
+                {pncBpStatus === 'High' ? '⚠ HIGH BP' : '✓ Normal BP'}
+              </Badge>
+            )}
             <Group gap="xs">
               <Button flex={1} variant="outline" color="teal" onClick={addPncContact}>{editingPncContactIndex != null ? `Update Contact (${editingPncContactIndex + 1} of ${pncCount})` : '+ Add Contact'}</Button>
               {editingPncContactIndex != null && <Button variant="subtle" color="gray" onClick={cancelEditPncContact}>Cancel</Button>}
@@ -57,20 +106,37 @@ export default function PostnatalTab({
             </Box>
             <Paper withBorder radius="sm" p="xs">
               <Text size="xs" fw={700} c="dimmed" mb={4}>Contact History ({pncCount})</Text>
-              <Box style={{ maxHeight: 160, overflowY: 'auto' }}>
+              <Box style={{ maxHeight: 200, overflowY: 'auto' }}>
                 <Table striped withTableBorder>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th style={{ fontSize: 11 }}>Date</Table.Th>
+                      <Table.Th style={{ fontSize: 11 }}>BP</Table.Th>
+                      <Table.Th style={{ fontSize: 11 }}>Action</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
                   <Table.Tbody>
-                    {pncContacts.map((c, i) => (
-                      <Table.Tr key={i} bg={i === editingPncContactIndex ? 'green.0' : undefined} style={i === editingPncContactIndex ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
-                        <Table.Td>{formatDate(c.date)}</Table.Td>
-                        <Table.Td>
-                          <Group gap="xs">
-                            <ActionIcon size="sm" color="blue" variant="light" onClick={() => startEditPncContact(i)} title="Edit"><Pencil size={14} /></ActionIcon>
-                            <ActionIcon size="sm" color="red" onClick={() => removePncContact(i)} title="Delete"><Trash size={14} /></ActionIcon>
-                          </Group>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
+                    {pncContacts.map((c, i) => {
+                      const cBp = getBpStatus(c.bp_systolic, c.bp_diastolic);
+                      return (
+                        <Table.Tr key={i} bg={i === editingPncContactIndex ? 'green.0' : undefined} style={i === editingPncContactIndex ? { borderLeft: '3px solid var(--mantine-color-green-6)' } : undefined}>
+                          <Table.Td>{formatDate(c.date)}</Table.Td>
+                          <Table.Td>
+                            {c.bp_systolic || c.bp_diastolic ? (
+                              <Badge size="xs" color={cBp === 'High' ? 'red' : 'green'} variant="light">
+                                {c.bp_systolic || '—'}/{c.bp_diastolic || '—'}
+                              </Badge>
+                            ) : '—'}
+                          </Table.Td>
+                          <Table.Td>
+                            <Group gap="xs">
+                              <ActionIcon size="sm" color="blue" variant="light" onClick={() => startEditPncContact(i)} title="Edit"><Pencil size={14} /></ActionIcon>
+                              <ActionIcon size="sm" color="red" onClick={() => removePncContact(i)} title="Delete"><Trash size={14} /></ActionIcon>
+                            </Group>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
                   </Table.Tbody>
                 </Table>
               </Box>

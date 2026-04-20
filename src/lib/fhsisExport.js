@@ -43,6 +43,9 @@ export async function exportToExcel(patients, options = {}) {
     tracked_resident: initCounts(), tracked_transin: initCounts(), tracked_transout_anc: initCounts(),
     pnc4_resident: initCounts(), pnc4_transin: initCounts(),
     pnc_due_resident: initCounts(), pnc_due_transin: initCounts(), pnc_due_transout: initCounts(),
+    // BP measurement
+    bp_measured_anc: initCounts(), bp_high_anc: initCounts(),
+    bp_measured_pnc: initCounts(), bp_high_pnc: initCounts(),
   };
   function getLab(p) {
     const logs = p.lab_logs || [];
@@ -86,6 +89,14 @@ export async function exportToExcel(patients, options = {}) {
       if (lab.cbc_positive) inc('anemia_positive');
       if (lab.gd_screened) inc('gd_screen');
       if (lab.gd_positive) inc('gd_positive');
+      // BP measurement (prenatal)
+      const visitsWithBp = (p.prenatal_visits || []).filter((v) => {
+        const s = Number(v.bp_systolic); const d = Number(v.bp_diastolic);
+        return (s > 0 || d > 0);
+      });
+      if (visitsWithBp.length > 0) inc('bp_measured_anc');
+      const hasHighBpAnc = visitsWithBp.some((v) => Number(v.bp_systolic) >= 140 || Number(v.bp_diastolic) >= 90);
+      if (hasHighBpAnc) inc('bp_high_anc');
       // 8ANC resident/trans-in/trans-out tracking
       const ancCount = (p.prenatal_visits || []).length;
       if (isResident) inc('tracked_resident');
@@ -140,6 +151,15 @@ export async function exportToExcel(patients, options = {}) {
       }
       if ((p.postpartum_ifa_count || 0) >= 90 || p.is_postpartum_ifa_completed === 'Yes' || p.is_postpartum_ifa_completed === 'true' || p.is_postpartum_ifa_completed === true) inc('postpartum_ifa');
       if (p.vit_a_completed_date || p.is_vit_a_completed === 'Yes' || p.is_vit_a_completed === 'true' || p.is_vit_a_completed === true) inc('vit_a');
+      // BP measurement (postnatal / PNC contacts)
+      const pncContactList = Array.isArray(p.pnc_contacts) ? p.pnc_contacts : [];
+      const pncWithBp = pncContactList.filter((c) => {
+        const s = Number(c.bp_systolic); const d = Number(c.bp_diastolic);
+        return (s > 0 || d > 0);
+      });
+      if (pncWithBp.length > 0) inc('bp_measured_pnc');
+      const hasHighBpPnc = pncWithBp.some((c) => Number(c.bp_systolic) >= 140 || Number(c.bp_diastolic) >= 90);
+      if (hasHighBpPnc) inc('bp_high_pnc');
     } catch (err) { console.error('Error processing patient for FHSIS:', p, err); }
   });
   // Compute 1b totals (b1 + b2) for both sections
@@ -204,8 +224,8 @@ export async function exportToExcel(patients, options = {}) {
   // Sub-section: Td Vaccination (left) + BP Measurement (right)
   writeColHeaders();
   dual('3. Tetanus diphtheria (Td) Containing Vaccination Status', null, '8. BP measurement', null, true);
-  dual('3a. Number of women pregnant for the first time given at least 2 doses of Tetanus diphtheria (Td) vaccination', 'td2plusFirst', '8a. No. of pregnant women who had their BP measured during each of their antenatal care visit', null);
-  dual('3b. Number of Pregnant Women for the 2nd or more times given at least 3 doses of Td vaccination (Td2 Plus)', 'td2plusRepeat', '8b. 1. No. of pregnant women identified with high BP or danger signs', null);
+  dual('3a. Number of women pregnant for the first time given at least 2 doses of Tetanus diphtheria (Td) vaccination', 'td2plusFirst', '8a. No. of pregnant women who had their BP measured during each of their antenatal care visit', 'bp_measured_anc');
+  dual('3b. Number of Pregnant Women for the 2nd or more times given at least 3 doses of Td vaccination (Td2 Plus)', 'td2plusRepeat', '8b. 1. No. of pregnant women identified with high BP or danger signs', 'bp_high_anc');
   dual('', null, '8b. 2. No. of pregnant women with high BP or danger signs who were referred to a higher-level facility', null);
 
   /* ═══ SECTION 2 — INTRAPARTUM AND NEWBORN CARE ═══ */
@@ -258,8 +278,8 @@ export async function exportToExcel(patients, options = {}) {
   dual('   a1. No. of women who delivered and provided 1st to 4th PNC on schedule (Resident)', 'pnc4_resident', '2b. Number of postpartum women who completed the dose of Vitamin A supplementation', 'vit_a');
   dual('   a2. No. of women delivered and completed at least 4PNC / TRANS-IN from other LGUs', 'pnc4_transin', '', null);
   dual('1b. Total No. of women due for PNC =(b1+b2)', 'pnc_due_total', '3. BP measurement', null, true);
-  dual('   b1. No. of women due for PNC (Resident)', 'pnc_due_resident', '3a. No. of postpartum women who had their BP measured during each of their antenatal care visit', null);
-  dual('   b2. No. of TRANS-IN from other LGUs due for PNC', 'pnc_due_transin', '3b. No. of postpartum women with high BP or danger signs who were referred to a higher-level facility', null);
+  dual('   b1. No. of women due for PNC (Resident)', 'pnc_due_resident', '3a. No. of postpartum women who had their BP measured during each of their postnatal care visit', 'bp_measured_pnc');
+  dual('   b2. No. of TRANS-IN from other LGUs due for PNC', 'pnc_due_transin', '3b. No. of postpartum women with high BP or danger signs who were referred to a higher-level facility', 'bp_high_pnc');
   dual('   b3. No. of TRANS-OUT (with MOV) before completing 4PNC', 'pnc_due_transout', '', null);
 
   sheet.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
