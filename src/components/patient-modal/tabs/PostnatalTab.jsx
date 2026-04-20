@@ -104,7 +104,7 @@ export default function PostnatalTab({
                   <Input type="date" max={new Date().toISOString().split('T')[0]} value={newPostpartumLog.date} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, date: e.target.value })} />
                   <NumberInput placeholder="Tabs" value={newPostpartumLog.count} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, count: v })} />
                 </Group>
-                <Select placeholder="Remarks (Optional)" data={[{ value: 'Trans In', label: 'A - Trans In' }, { value: 'Trans Out', label: 'B - Trans Out before 4PNC' }]} value={newPostpartumLog.remarks} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, remarks: v })} clearable />
+                <TextInput placeholder="Remarks (Optional)" value={newPostpartumLog.remarks || ''} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, remarks: e.target.value.toUpperCase() })} />
                 <Group gap={4}>
                   <Button onClick={addPostpartumLog} size="xs" variant="light" flex={1}>{editingPostpartumIndex != null ? `Update Log (${editingPostpartumIndex + 1} of ${(formData.postpartum_logs || []).length})` : '+ Add Log'}</Button>
                   {editingPostpartumIndex != null && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditPostpartumLog}>Cancel</Button>}

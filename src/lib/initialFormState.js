@@ -117,5 +117,9 @@ export function getInitialFormState() {
     // Birth Registration
     birth_registered: null,
     birth_registration_date: '',
+
+    // Transfer status
+    is_transfer: null,
+    transfer_type: '',
   };
 }

@@ -193,6 +193,45 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
             </Input.Wrapper>
           </Grid.Col>
 
+          <Grid.Col span={12}>
+            <Input.Wrapper label="Trans-In / Trans-Out">
+              <Group mt="xs" gap="md">
+                <Checkbox
+                  label="Yes"
+                  checked={formData.is_transfer === true}
+                  onChange={(e) => {
+                    const checked = e.currentTarget.checked;
+                    setFormData({
+                      ...formData,
+                      is_transfer: checked ? true : null,
+                      ...(checked ? {} : { transfer_type: '' }),
+                    });
+                  }}
+                />
+                <Checkbox
+                  label="No"
+                  checked={formData.is_transfer === false}
+                  onChange={(e) => setFormData({ ...formData, is_transfer: e.currentTarget.checked ? false : null, transfer_type: '' })}
+                />
+              </Group>
+            </Input.Wrapper>
+            {formData.is_transfer === true && (
+              <Select
+                mt="xs"
+                ml="md"
+                label="Transfer type"
+                placeholder="Select one"
+                clearable
+                data={[
+                  { value: 'Trans-In', label: 'Trans-In' },
+                  { value: 'Trans-Out', label: 'Trans-Out' },
+                ]}
+                value={formData.transfer_type || null}
+                onChange={(val) => setFormData({ ...formData, transfer_type: val || '' })}
+              />
+            )}
+          </Grid.Col>
+
         </Grid>
       </Paper>
 
