@@ -15,6 +15,7 @@ import AboutView from './components/help/AboutView';
 import StatisticsView from './components/statistics/StatisticsView';
 import AppShellLayout from './components/layout/AppShellLayout';
 import PatientModal from './components/patient-modal/PatientModal';
+import ViewRecordModal from './components/patient-modal/ViewRecordModal';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { Box, Loader, Text } from '@mantine/core';
@@ -184,7 +185,7 @@ function MainApp({ session, onLogout }) {
   const [opened, { open, close }] = useDisclosure(false);
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [readOnly, setReadOnly] = useState(false);
+  const [viewModalPatient, setViewModalPatient] = useState(null);
   const [editId, setEditId] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
   const [formErrors, setFormErrors] = useState({});
@@ -725,62 +726,11 @@ function MainApp({ session, onLogout }) {
     setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
     setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
-    setReadOnly(false);
     open();
   };
 
   const handleViewClick = (patient) => {
-    const attendant = parseOthers(patient.delivery_attendant);
-    const cleanData = {};
-    Object.keys(initialFormState).forEach((key) => {
-      if (patient[key] === null || patient[key] === undefined) cleanData[key] = initialFormState[key];
-      else cleanData[key] = patient[key];
-    });
-    cleanData.baby_details = Array.isArray(patient.baby_details) ? patient.baby_details : (cleanData.baby_details || []);
-    if (cleanData.baby_details.length > 0) {
-      cleanData.baby_details = cleanData.baby_details.map((b, i) => ({
-        weight: b.weight || '',
-        category: b.category || '',
-        sex: b.sex || '',
-        delivery_date: b.delivery_date || (i === 0 ? (patient.delivery_date || '') : ''),
-        delivery_time: b.delivery_time || (i === 0 ? (patient.delivery_time || '') : ''),
-        status: b.status || 'Live Birth',
-      }));
-    } else if (patient.delivery_date || patient.birth_weight || patient.birth_sex) {
-      cleanData.baby_details = [{
-        weight: patient.birth_weight || '',
-        category: patient.birth_weight_category || '',
-        sex: patient.birth_sex || '',
-        delivery_date: patient.delivery_date || '',
-        delivery_time: patient.delivery_time || '',
-        status: 'Live Birth',
-      }];
-    }
-    cleanData.pnc_contacts = [patient.pnc_date_1, patient.pnc_date_2, patient.pnc_date_3, patient.pnc_date_4]
-      .filter(Boolean)
-      .map((date) => ({ date }));
-    cleanData.is_8anc_completed = (patient.is_8anc_completed === true || patient.is_8anc_completed === 'Yes') ? 'Yes' : 'No';
-    cleanData.td_completed_previously = (patient.td_completed_previously === true || patient.td_completed_previously === 'true' || String(patient.td_completed_previously) === 'true');
-
-    setFormData({
-      ...initialFormState,
-      ...cleanData,
-      manual_risk: patient.manual_risk != null ? !!patient.manual_risk : !!patient.is_high_risk,
-      delivery_attendant: attendant.main,
-      delivery_attendant_specify: attendant.specify,
-      prenatal_visits: patient.prenatal_visits || [],
-      supplements_ifa: patient.supplements_ifa || [],
-      supplements_calcium: patient.supplements_calcium || [],
-      supplements_mms: patient.supplements_mms || [],
-      lab_logs: patient.lab_logs || [],
-      postpartum_logs: patient.postpartum_logs || [],
-    });
-    setFormErrors({});
-    setIsEditing(false);
-    setEditId(null);
-    setActiveTab('general');
-    setReadOnly(true);
-    open();
+    setViewModalPatient(patient);
   };
 
   const handleEditClick = (patient) => {
@@ -845,7 +795,6 @@ function MainApp({ session, onLogout }) {
     setNewLab({ type: 'CBC', date: '', result: '', hemoglobin: '', remarks: '' });
     setNewPostpartumLog({ date: '', count: '', remarks: '' });
     setNewPncContact({ date: '', bp_systolic: '', bp_diastolic: '' });
-    setReadOnly(false);
     open();
   };
 
@@ -1132,7 +1081,16 @@ function MainApp({ session, onLogout }) {
         totalPostpartum={totalPostpartum}
         postpartumProgress={postpartumProgress}
         isAborted={isAborted}
-        readOnly={readOnly}
+      />
+
+      <ViewRecordModal
+        patient={viewModalPatient}
+        opened={!!viewModalPatient}
+        onClose={() => setViewModalPatient(null)}
+        onEdit={(patient) => {
+          setViewModalPatient(null);
+          setTimeout(() => handleEditClick(patient), 100);
+        }}
       />
     </>
   );
