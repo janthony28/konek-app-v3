@@ -1,4 +1,4 @@
-import { Modal, Tabs, Button } from '@mantine/core';
+import { Modal, Tabs, Button, Box } from '@mantine/core';
 import { FileText, Stethoscope, Thermometer, Pill, TestTube, Activity, Clock } from 'lucide-react';
 import GeneralTab from './tabs/GeneralTab';
 import PrenatalTab from './tabs/PrenatalTab';
@@ -75,9 +75,10 @@ export default function PatientModal({
   totalPostpartum,
   postpartumProgress,
   isAborted,
+  readOnly = false,
 }) {
   return (
-    <Modal opened={opened} onClose={close} title={isEditing ? 'Edit Record' : 'Add New Record'} fullScreen overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}>
+    <Modal opened={opened} onClose={close} title={readOnly ? 'View Record' : (isEditing ? 'Edit Record' : 'Add New Record')} fullScreen overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}>
       <Tabs value={activeTab} onChange={setActiveTab} color="teal" variant="pills" radius="md">
         <Tabs.List mb="md" grow>
           <Tabs.Tab value="general" leftSection={<FileText size={14} />}>General Data</Tabs.Tab>
@@ -89,6 +90,7 @@ export default function PatientModal({
           <Tabs.Tab value="postnatal" leftSection={<Clock size={14} />}>Postnatal Care and Postpartum Supplementation</Tabs.Tab>
         </Tabs.List>
 
+        <Box style={readOnly ? { pointerEvents: 'none', opacity: 0.85 } : undefined}>
         <Tabs.Panel value="general">
           <GeneralTab formData={formData} setFormData={setFormData} formErrors={formErrors} getAgeGroup={getAgeGroup} handleLmpChange={handleLmpChange} nextTab={nextTab} allowedBarangays={allowedBarangays} />
         </Tabs.Panel>
@@ -128,8 +130,9 @@ export default function PatientModal({
         <Tabs.Panel value="postnatal">
           <PostnatalTab formData={formData} setFormData={setFormData} newPostpartumLog={newPostpartumLog} setNewPostpartumLog={setNewPostpartumLog} addPostpartumLog={addPostpartumLog} removePostpartumLog={removePostpartumLog} editingPostpartumIndex={editingPostpartumIndex} startEditPostpartumLog={startEditPostpartumLog} cancelEditPostpartumLog={cancelEditPostpartumLog} newPncContact={newPncContact} setNewPncContact={setNewPncContact} handlePncContactDateChange={handlePncContactDateChange} addPncContact={addPncContact} removePncContact={removePncContact} editingPncContactIndex={editingPncContactIndex} startEditPncContact={startEditPncContact} cancelEditPncContact={cancelEditPncContact} postpartumProgress={postpartumProgress} prevTab={prevTab} />
         </Tabs.Panel>
+        </Box>
       </Tabs>
-      {(() => {
+      {!readOnly && (() => {
         const visits = formData.prenatal_visits || [];
         const latestVisit = visits.length ? visits[visits.length - 1] : {};
         const hasLabPositive = (formData.lab_logs || []).some(

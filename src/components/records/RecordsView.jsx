@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Group, Paper, Stack, Table, Text, Title, Badge, Box, Button, TextInput, ActionIcon, Select, Grid, ThemeIcon } from '@mantine/core';
-import { UserPlus, Search, Edit, Trash, Filter, RefreshCw } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash, Filter, RefreshCw, Eye } from 'lucide-react';
 import { formatDate } from '../../lib/formatters';
 import { isPatientDue, getLatestPrenatalVisit, isPatientPncDue } from '../../lib/patientHelpers';
 import { filterPatientsByReportMonth } from '../../lib/reportMonthFilter';
@@ -33,6 +33,7 @@ export default function RecordsView({
   setSearch,
   handleAddClick,
   handleEditClick,
+  handleViewClick,
   handleDelete,
   isAdmin,
   currentUserId,
@@ -293,11 +294,25 @@ export default function RecordsView({
                     <Table.Td>
                       <Group gap={6}>
                         <ActionIcon
+                          color="teal"
+                          variant="light"
+                          onClick={() => handleViewClick(p)}
+                          size="lg"
+                          radius="md"
+                          title="View Record"
+                          style={{
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <Eye size={18} />
+                        </ActionIcon>
+                        <ActionIcon
                           color="blue"
                           variant="light"
                           onClick={() => handleEditClick(p)}
                           size="lg"
                           radius="md"
+                          title="Edit Record"
                           style={{
                             transition: 'all 0.2s ease',
                           }}

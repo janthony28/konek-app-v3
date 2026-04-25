@@ -204,31 +204,53 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
                     setFormData({
                       ...formData,
                       is_transfer: checked ? true : null,
-                      ...(checked ? {} : { transfer_type: '' }),
+                      ...(checked ? {} : { transfer_type: '', transfer_from: '', transfer_to: '' }),
                     });
                   }}
                 />
                 <Checkbox
                   label="No"
                   checked={formData.is_transfer === false}
-                  onChange={(e) => setFormData({ ...formData, is_transfer: e.currentTarget.checked ? false : null, transfer_type: '' })}
+                  onChange={(e) => setFormData({ ...formData, is_transfer: e.currentTarget.checked ? false : null, transfer_type: '', transfer_from: '', transfer_to: '' })}
                 />
               </Group>
             </Input.Wrapper>
             {formData.is_transfer === true && (
-              <Select
-                mt="xs"
-                ml="md"
-                label="Transfer type"
-                placeholder="Select one"
-                clearable
-                data={[
-                  { value: 'Trans-In', label: 'Trans-In' },
-                  { value: 'Trans-Out', label: 'Trans-Out' },
-                ]}
-                value={formData.transfer_type || null}
-                onChange={(val) => setFormData({ ...formData, transfer_type: val || '' })}
-              />
+              <>
+                <Select
+                  mt="xs"
+                  ml="md"
+                  label="Transfer type"
+                  placeholder="Select one"
+                  clearable
+                  data={[
+                    { value: 'Trans-In', label: 'Trans-In' },
+                    { value: 'Trans-Out', label: 'Trans-Out' },
+                  ]}
+                  value={formData.transfer_type || null}
+                  onChange={(val) => setFormData({ ...formData, transfer_type: val || '', transfer_from: '', transfer_to: '' })}
+                />
+                {formData.transfer_type === 'Trans-In' && (
+                  <TextInput
+                    mt="xs"
+                    ml="md"
+                    label="From Where?"
+                    placeholder="e.g., City / Municipality / Facility"
+                    value={formData.transfer_from || ''}
+                    onChange={(e) => setFormData({ ...formData, transfer_from: e.target.value.toUpperCase() })}
+                  />
+                )}
+                {formData.transfer_type === 'Trans-Out' && (
+                  <TextInput
+                    mt="xs"
+                    ml="md"
+                    label="To Where?"
+                    placeholder="e.g., City / Municipality / Facility"
+                    value={formData.transfer_to || ''}
+                    onChange={(e) => setFormData({ ...formData, transfer_to: e.target.value.toUpperCase() })}
+                  />
+                )}
+              </>
             )}
           </Grid.Col>
 

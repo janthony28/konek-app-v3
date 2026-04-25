@@ -121,5 +121,7 @@ export function getInitialFormState() {
     // Transfer status
     is_transfer: null,
     transfer_type: '',
+    transfer_from: '',
+    transfer_to: '',
   };
 }
