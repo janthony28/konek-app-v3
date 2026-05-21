@@ -1,5 +1,5 @@
-import { Stack, Title, Text, Tabs, Accordion, Paper, List, Anchor, Box } from '@mantine/core';
-import { HelpCircle, Mail } from 'lucide-react';
+import { Stack, Title, Text, Tabs, Accordion, Paper, List, Anchor, Box, AspectRatio } from '@mantine/core';
+import { HelpCircle, Mail, PlayCircle } from 'lucide-react';
 
 const FAQ_ITEMS = [
   {
@@ -118,6 +118,7 @@ export default function HelpView() {
       <Tabs defaultValue="faqs" color="teal" variant="pills" radius="md">
         <Tabs.List mb="md">
           <Tabs.Tab value="faqs" leftSection={<HelpCircle size={16} />}>FAQs</Tabs.Tab>
+          <Tabs.Tab value="walkthrough" leftSection={<PlayCircle size={16} />}>Video Walkthrough</Tabs.Tab>
           <Tabs.Tab value="contact" leftSection={<Mail size={16} />}>Contact Us</Tabs.Tab>
         </Tabs.List>
 
@@ -131,6 +132,25 @@ export default function HelpView() {
                 </Accordion.Item>
               ))}
             </Accordion>
+          </Paper>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="walkthrough">
+          <Paper p="xl" radius="md" withBorder>
+            <Title order={4} mb="xs">Website Walkthrough</Title>
+            <Text size="sm" c="dimmed" mb="md">
+              Watch this video to learn how to navigate and use the KONEK application.
+            </Text>
+            <AspectRatio ratio={16 / 9} maw={800}>
+              <iframe
+                src="https://www.youtube.com/embed/Eb15GSiS7sQ"
+                title="KONEK Website Walkthrough"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ borderRadius: 'var(--mantine-radius-md)' }}
+              />
+            </AspectRatio>
           </Paper>
         </Tabs.Panel>
 
