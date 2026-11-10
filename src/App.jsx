@@ -835,6 +835,12 @@ function MainApp({ session, onLogout }) {
     if (isInvalid(formData.lmp)) setError('lmp', 'general', 'LMP is required');
     if (isInvalid(formData.gravida)) setError('gravida', 'general', 'Gravida is required');
     if (isInvalid(formData.parity)) setError('parity', 'general', 'Parity is required');
+    if (isInvalid(formData.civil_status)) setError('civil_status', 'general', 'Civil status is required');
+    if (formData.is_solo_parent !== true && formData.is_solo_parent !== false) setError('is_solo_parent', 'general', 'Please select Yes or No');
+    if (formData.is_4ps_member !== true && formData.is_4ps_member !== false) setError('is_4ps_member', 'general', 'Please select Yes or No');
+    if (isInvalid(formData.philhealth_status)) setError('philhealth_status', 'general', 'PhilHealth status is required');
+    if (formData.sss_member !== true && formData.sss_member !== false) setError('sss_member', 'general', 'Please select Yes or No');
+    if (formData.gsis_member !== true && formData.gsis_member !== false) setError('gsis_member', 'general', 'Please select Yes or No');
     { const e = validateNumber('age', formData.age); if (e) setError('age', 'general', e); }
     { const e = validateNumber('gravida', formData.gravida); if (e) setError('gravida', 'general', e); }
     { const e = validateNumber('parity', formData.parity); if (e) setError('parity', 'general', e); }

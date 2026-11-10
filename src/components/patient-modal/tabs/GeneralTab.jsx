@@ -52,7 +52,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
 
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="Civil Status">
+            <Input.Wrapper label="Civil Status" withAsterisk error={formErrors.civil_status}>
               <Group mt="xs" gap="md">
                 {['Single', 'Married', 'Widowed', 'Legally Separated'].map((status) => (
                   <Checkbox
@@ -67,7 +67,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="Solo Parent">
+            <Input.Wrapper label="Solo Parent" withAsterisk error={formErrors.is_solo_parent}>
               <Group mt="xs" gap="md">
                 <Checkbox
                   label="Yes"
@@ -84,7 +84,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="4Ps Member">
+            <Input.Wrapper label="4Ps Member" withAsterisk error={formErrors.is_4ps_member}>
               <Group mt="xs" gap="md">
                 <Checkbox
                   label="Yes"
@@ -101,7 +101,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="PhilHealth Member">
+            <Input.Wrapper label="PhilHealth Member" withAsterisk error={formErrors.philhealth_status}>
               <Group mt="xs" gap="md">
                 <Checkbox
                   label="Member"
@@ -161,7 +161,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="SSS Member">
+            <Input.Wrapper label="SSS Member" withAsterisk error={formErrors.sss_member}>
               <Group mt="xs" gap="md">
                 <Checkbox
                   label="Yes"
@@ -178,7 +178,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
           </Grid.Col>
 
           <Grid.Col span={12}>
-            <Input.Wrapper label="GSIS Member">
+            <Input.Wrapper label="GSIS Member" withAsterisk error={formErrors.gsis_member}>
               <Group mt="xs" gap="md">
                 <Checkbox
                   label="Yes"
