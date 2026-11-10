@@ -538,6 +538,14 @@ export async function exportMaternalTcl(patients, options = {}) {
 
     // Helper to uppercase string values for report consistency
     const up = (v) => (typeof v === 'string' ? v.toUpperCase() : (v ?? ''));
+    // Helper to format YYYY-MM-DD dates as MM/DD/YY to match column headers
+    const fmtDate = (d) => {
+      if (!d) return '';
+      const s = String(d).trim();
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[2]}/${m[3]}/${m[1].slice(-2)}`;
+      return s;
+    };
 
     const visits = Array.isArray(p.prenatal_visits) ? [...p.prenatal_visits] : [];
     visits.sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
@@ -567,7 +575,7 @@ export async function exportMaternalTcl(patients, options = {}) {
 
     const rowValues = {
       no: idx + 1,
-      dateReg: p.date_of_registration || p.date_registered || '',
+      dateReg: fmtDate(p.date_of_registration || p.date_registered || ''),
       fullName: up(fullName),
       address: up(address),
       contactNo: p.contact_no || '',
@@ -586,36 +594,36 @@ export async function exportMaternalTcl(patients, options = {}) {
       })(),
       sssMember: p.sss_member === true ? 1 : (p.sss_member === false ? 0 : ''),
       gsisMember: p.gsis_member === true ? 1 : (p.gsis_member === false ? 0 : ''),
-      lmp: p.lmp || '',
+      lmp: fmtDate(p.lmp || ''),
       gravida: p.gravida || '',
       parity: (p.parity === 0 || p.parity === '0') ? 0 : (p.parity ?? ''),
-      edd: p.edc || p.edd || '',
-      anc1: visitDates[0] || '', anc2: visitDates[1] || '', anc3: visitDates[2] || '', anc4: visitDates[3] || '',
-      anc5: visitDates[4] || '', anc6: visitDates[5] || '', anc7: visitDates[6] || '', anc8: visitDates[7] || '',
+      edd: fmtDate(p.edc || p.edd || ''),
+      anc1: fmtDate(visitDates[0] || ''), anc2: fmtDate(visitDates[1] || ''), anc3: fmtDate(visitDates[2] || ''), anc4: fmtDate(visitDates[3] || ''),
+      anc5: fmtDate(visitDates[4] || ''), anc6: fmtDate(visitDates[5] || ''), anc7: fmtDate(visitDates[6] || ''), anc8: fmtDate(visitDates[7] || ''),
       bmi1: firstTrimesterVisit.bmi || '',
       bmiCat1: firstTrimesterVisit.bmi_category || '',
-      td1: p.td1 || '', td2: p.td2 || '', td3: p.td3 || '', td4: p.td4 || '', td5: p.td5 || '',
+      td1: fmtDate(p.td1 || ''), td2: fmtDate(p.td2 || ''), td3: fmtDate(p.td3 || ''), td4: fmtDate(p.td4 || ''), td5: fmtDate(p.td5 || ''),
       dewormingGiven: p.is_deworming_given ? 1 : 0,
-      dewormingDate: p.deworming_date || '',
-      syphilisDate: syphilis?.date || '',
+      dewormingDate: fmtDate(p.deworming_date || ''),
+      syphilisDate: fmtDate(syphilis?.date || ''),
       syphilisResult: isSyphilisPos ? 1 : (syphilis ? 0 : ''),
-      hivDate: hiv?.date || '',
+      hivDate: fmtDate(hiv?.date || ''),
       hivResult: isHivPos ? 1 : (hiv ? 0 : ''),
-      hepbDate: hepb?.date || '',
+      hepbDate: fmtDate(hepb?.date || ''),
       hepbResult: isHepbPos ? 1 : (hepb ? 0 : ''),
-      cbcDate: cbc?.date || '',
+      cbcDate: fmtDate(cbc?.date || ''),
       cbcResult: isCbcAnemia ? 1 : (cbc ? 0 : ''),
       cbcHemoglobin: (() => {
         const raw = String(cbc?.hemoglobin ?? '').trim();
         if (!raw) return '';
         return /^\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw; // export valid values as real numbers
       })(),
-      gdmDate: gdm?.date || '',
+      gdmDate: fmtDate(gdm?.date || ''),
       gdmResult: isGdmPos ? 1 : (gdm ? 0 : ''),
-      urinalysisDate: urinalysis?.date || '',
+      urinalysisDate: fmtDate(urinalysis?.date || ''),
       urinalysisResult: isUrinalysisUti ? 1 : (urinalysis ? 0 : ''),
       urinalysisRemarks: up(urinalysis?.remarks || ''),
-      deliveryDate: firstBaby.delivery_date || p.delivery_date || '',
+      deliveryDate: fmtDate(firstBaby.delivery_date || p.delivery_date || ''),
       deliveryOutcome: p.delivery_outcome || '',
       deliveryMode: p.delivery_mode || '',
       birthWeight: firstBaby.weight || p.birth_weight || '',
@@ -632,11 +640,11 @@ export async function exportMaternalTcl(patients, options = {}) {
       attendant: (() => { const parsed = parseOthers(p.delivery_attendant); return parsed.main || ''; })(),
       attendantSpecify: up((() => { const parsed = parseOthers(p.delivery_attendant); return parsed.specify || ''; })()),
       deliveryTime: firstBaby.delivery_time || p.delivery_time || '',
-      pnc1: p.pnc_date_1 || '', pnc2: p.pnc_date_2 || '', pnc3: p.pnc_date_3 || '', pnc4: p.pnc_date_4 || '',
+      pnc1: fmtDate(p.pnc_date_1 || ''), pnc2: fmtDate(p.pnc_date_2 || ''), pnc3: fmtDate(p.pnc_date_3 || ''), pnc4: fmtDate(p.pnc_date_4 || ''),
       pncCompleted: is4PncCompleted ? 1 : 0,
       ppIfaCount: p.postpartum_ifa_count || 0,
-      ppIfaDate: p.postpartum_ifa_completed_date || '',
-      vitADate: p.vit_a_completed_date || '',
+      ppIfaDate: fmtDate(p.postpartum_ifa_completed_date || ''),
+      vitADate: fmtDate(p.vit_a_completed_date || ''),
     };
 
     // Build an array of cell values in column order
