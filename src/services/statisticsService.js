@@ -102,7 +102,10 @@ function collectRiskReasons(record) {
       addedLabReasons.add(log.type);
     }
   }
-  const customReason = String(record?.high_risk_reason || '').trim();
+  const customReason = String(record?.high_risk_reason || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
   if (customReason) reasons.push(customReason);
   if (!reasons.length) reasons.push('Unspecified');
   return reasons;
