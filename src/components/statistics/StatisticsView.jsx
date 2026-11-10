@@ -44,6 +44,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Label,
   LabelList,
   Legend,
   Pie,
@@ -120,6 +121,31 @@ function ChartPaper({ title, subtitle, icon, color = 'teal', children, height = 
   );
 }
 
+/* ── Custom Legend Row (keeps PieChart 100% centered) ─────────────────── */
+function ChartLegendRow({ data, colors }) {
+  return (
+    <Group justify="center" gap="md" wrap="wrap" pt={4}>
+      {data.map((entry, i) => (
+        <Group key={entry.name} gap={6} wrap="nowrap">
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              backgroundColor: colors[i % colors.length],
+              display: 'inline-block',
+              flexShrink: 0,
+            }}
+          />
+          <Text size="xs" fw={600} style={{ color: colors[i % colors.length] }}>
+            {entry.name}
+          </Text>
+        </Group>
+      ))}
+    </Group>
+  );
+}
+
 /* ── Donut chart with center KPI overlay ──────────────────────────────── */
 function DonutChartWithCenter({
   data,
@@ -131,50 +157,52 @@ function DonutChartWithCenter({
   centerColor = '#212529',
 }) {
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: '44%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      >
-        <Text fw={800} size="xl" lh={1.1} style={{ color: centerColor }}>
-          {centerValue}
-        </Text>
-        {centerLabel && (
-          <Text size="10px" fw={600} c="dimmed" tt="uppercase" mt={2}>
-            {centerLabel}
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        >
+          <Text fw={800} size="xl" lh={1.1} style={{ color: centerColor }}>
+            {centerValue}
           </Text>
-        )}
+          {centerLabel && (
+            <Text size="10px" fw={700} c="dimmed" tt="uppercase" mt={2}>
+              {centerLabel}
+            </Text>
+          )}
+        </div>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius={56}
+              outerRadius={86}
+              paddingAngle={3}
+              cornerRadius={6}
+              onClick={onSliceClick}
+              style={{ cursor: 'pointer', outline: 'none' }}
+            >
+              {data.map((entry, i) => (
+                <Cell key={entry.name} fill={colors[i % colors.length]} stroke="none" />
+              ))}
+            </Pie>
+            <Tooltip wrapperStyle={{ zIndex: 20 }} content={tooltipContent || <SimplePieTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="44%"
-            innerRadius={56}
-            outerRadius={86}
-            paddingAngle={3}
-            cornerRadius={6}
-            onClick={onSliceClick}
-            style={{ cursor: 'pointer', outline: 'none' }}
-          >
-            {data.map((entry, i) => (
-              <Cell key={entry.name} fill={colors[i % colors.length]} stroke="none" />
-            ))}
-          </Pie>
-          <Tooltip content={tooltipContent || <SimplePieTooltip />} />
-          <Legend verticalAlign="bottom" height={32} iconType="circle" />
-        </PieChart>
-      </ResponsiveContainer>
+      <ChartLegendRow data={data} colors={colors} />
     </div>
   );
 }
@@ -194,49 +222,51 @@ function CompletionGaugeChart({
   const total = completed + notCompleted;
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: '56%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      >
-        <Text fw={800} size="2rem" lh={1} style={{ color: accentColor }}>
-          {rate}%
-        </Text>
-        <Text size="xs" c="dimmed" fw={600} mt={4}>
-          {completed} of {total} mothers
-        </Text>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '60%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        >
+          <Text fw={800} size="2rem" lh={1} style={{ color: accentColor }}>
+            {rate}%
+          </Text>
+          <Text size="xs" c="dimmed" fw={600} mt={4}>
+            {completed} of {total} mothers
+          </Text>
+        </div>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="70%"
+              startAngle={180}
+              endAngle={0}
+              innerRadius={68}
+              outerRadius={98}
+              paddingAngle={2}
+              cornerRadius={8}
+              onClick={onSliceClick}
+              style={{ cursor: 'pointer', outline: 'none' }}
+            >
+              <Cell fill={accentColor} stroke="none" />
+              <Cell fill={COLORS.lightTrack} stroke="none" />
+            </Pie>
+            <Tooltip wrapperStyle={{ zIndex: 20 }} content={<SimplePieTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="64%"
-            startAngle={180}
-            endAngle={0}
-            innerRadius={68}
-            outerRadius={98}
-            paddingAngle={2}
-            cornerRadius={8}
-            onClick={onSliceClick}
-            style={{ cursor: 'pointer', outline: 'none' }}
-          >
-            <Cell fill={accentColor} stroke="none" />
-            <Cell fill={COLORS.lightTrack} stroke="none" />
-          </Pie>
-          <Tooltip content={<SimplePieTooltip />} />
-          <Legend verticalAlign="bottom" height={32} iconType="circle" />
-        </PieChart>
-      </ResponsiveContainer>
+      <ChartLegendRow data={data} colors={[accentColor, COLORS.gray]} />
     </div>
   );
 }
