@@ -77,8 +77,10 @@ export default function PatientModal({
   isAborted,
 }) {
   return (
-    <Modal opened={opened} onClose={close} title={isEditing ? 'Edit Record' : 'Add New Record'} fullScreen overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}>
-      <Tabs value={activeTab} onChange={setActiveTab} color="teal" variant="pills" radius="md">
+    <Modal opened={opened} onClose={close} title={isEditing ? 'Edit Record' : 'Add New Record'} fullScreen transitionProps={{ duration: 0 }}>
+      {opened && (
+      <>
+      <Tabs value={activeTab} onChange={setActiveTab} color="teal" variant="pills" radius="md" keepMounted={false}>
         <Tabs.List mb="md" grow>
           <Tabs.Tab value="general" leftSection={<FileText size={14} />}>General Data</Tabs.Tab>
           <Tabs.Tab value="prenatal" leftSection={<Stethoscope size={14} />}>Prenatal Checkup (8ANC)</Tabs.Tab>
@@ -90,48 +92,60 @@ export default function PatientModal({
         </Tabs.List>
 
         <Tabs.Panel value="general">
-          <GeneralTab formData={formData} setFormData={setFormData} formErrors={formErrors} getAgeGroup={getAgeGroup} handleLmpChange={handleLmpChange} nextTab={nextTab} allowedBarangays={allowedBarangays} />
+          {activeTab === 'general' && (
+            <GeneralTab formData={formData} setFormData={setFormData} formErrors={formErrors} getAgeGroup={getAgeGroup} handleLmpChange={handleLmpChange} nextTab={nextTab} allowedBarangays={allowedBarangays} />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="prenatal">
-          <PrenatalTab formData={formData} setFormData={setFormData} newVisit={newVisit} setNewVisit={setNewVisit} handleVisitDateChange={handleVisitDateChange} handleBMIChange={handleBMIChange} addVisitToList={addVisitToList} removeVisit={removeVisit} editingVisitIndex={editingVisitIndex} startEditVisit={startEditVisit} cancelEditVisit={cancelEditVisit} nextTab={nextTab} prevTab={prevTab} />
+          {activeTab === 'prenatal' && (
+            <PrenatalTab formData={formData} setFormData={setFormData} newVisit={newVisit} setNewVisit={setNewVisit} handleVisitDateChange={handleVisitDateChange} handleBMIChange={handleBMIChange} addVisitToList={addVisitToList} removeVisit={removeVisit} editingVisitIndex={editingVisitIndex} startEditVisit={startEditVisit} cancelEditVisit={cancelEditVisit} nextTab={nextTab} prevTab={prevTab} />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="immunization">
-          <ImmunizationTab formData={formData} setFormData={setFormData} handleTdChange={handleTdChange} getImmunizationStats={getImmunizationStats} nextTab={nextTab} prevTab={prevTab} />
+          {activeTab === 'immunization' && (
+            <ImmunizationTab formData={formData} setFormData={setFormData} handleTdChange={handleTdChange} getImmunizationStats={getImmunizationStats} nextTab={nextTab} prevTab={prevTab} />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="supplementation">
-          <SupplementationTab formData={formData} setFormData={setFormData} newSupp={newSupp} setNewSupp={setNewSupp} addSupplement={addSupplement} removeSupplement={removeSupplement} editingSupp={editingSupp} startEditSupplement={startEditSupplement} cancelEditSupplement={cancelEditSupplement} totalIFA={totalIFA} totalMMS={totalMMS} ifaProgress={ifaProgress} nextTab={nextTab} prevTab={prevTab} />
+          {activeTab === 'supplementation' && (
+            <SupplementationTab formData={formData} setFormData={setFormData} newSupp={newSupp} setNewSupp={setNewSupp} addSupplement={addSupplement} removeSupplement={removeSupplement} editingSupp={editingSupp} startEditSupplement={startEditSupplement} cancelEditSupplement={cancelEditSupplement} totalIFA={totalIFA} totalMMS={totalMMS} ifaProgress={ifaProgress} nextTab={nextTab} prevTab={prevTab} />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="labs">
-          <LabsTab formData={formData} setFormData={setFormData} newLab={newLab} setNewLab={setNewLab} addLabLog={addLabLog} removeLabLog={removeLabLog} editingLabIndex={editingLabIndex} startEditLabLog={startEditLabLog} cancelEditLabLog={cancelEditLabLog} nextTab={nextTab} prevTab={prevTab} />
+          {activeTab === 'labs' && (
+            <LabsTab formData={formData} setFormData={setFormData} newLab={newLab} setNewLab={setNewLab} addLabLog={addLabLog} removeLabLog={removeLabLog} editingLabIndex={editingLabIndex} startEditLabLog={startEditLabLog} cancelEditLabLog={cancelEditLabLog} nextTab={nextTab} prevTab={prevTab} />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="delivery">
-          <DeliveryTab
-            formData={formData}
-            setFormData={setFormData}
-            formErrors={formErrors}
-            handleBirthWeightChange={handleBirthWeightChange}
-            handleBabySexChange={handleBabySexChange}
-            handleBabyFieldChange={handleBabyFieldChange}
-            addBaby={addBaby}
-            removeBaby={removeBaby}
-            isAborted={isAborted}
-            nextTab={nextTab}
-            prevTab={prevTab}
-          />
+          {activeTab === 'delivery' && (
+            <DeliveryTab
+              formData={formData}
+              setFormData={setFormData}
+              formErrors={formErrors}
+              handleBirthWeightChange={handleBirthWeightChange}
+              handleBabySexChange={handleBabySexChange}
+              handleBabyFieldChange={handleBabyFieldChange}
+              addBaby={addBaby}
+              removeBaby={removeBaby}
+              isAborted={isAborted}
+              nextTab={nextTab}
+              prevTab={prevTab}
+            />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="postnatal">
-          <PostnatalTab formData={formData} setFormData={setFormData} newPostpartumLog={newPostpartumLog} setNewPostpartumLog={setNewPostpartumLog} addPostpartumLog={addPostpartumLog} removePostpartumLog={removePostpartumLog} editingPostpartumIndex={editingPostpartumIndex} startEditPostpartumLog={startEditPostpartumLog} cancelEditPostpartumLog={cancelEditPostpartumLog} newPncContact={newPncContact} setNewPncContact={setNewPncContact} handlePncContactDateChange={handlePncContactDateChange} addPncContact={addPncContact} removePncContact={removePncContact} editingPncContactIndex={editingPncContactIndex} startEditPncContact={startEditPncContact} cancelEditPncContact={cancelEditPncContact} postpartumProgress={postpartumProgress} prevTab={prevTab} />
+          {activeTab === 'postnatal' && (
+            <PostnatalTab formData={formData} setFormData={setFormData} newPostpartumLog={newPostpartumLog} setNewPostpartumLog={setNewPostpartumLog} addPostpartumLog={addPostpartumLog} removePostpartumLog={removePostpartumLog} editingPostpartumIndex={editingPostpartumIndex} startEditPostpartumLog={startEditPostpartumLog} cancelEditPostpartumLog={cancelEditPostpartumLog} newPncContact={newPncContact} setNewPncContact={setNewPncContact} handlePncContactDateChange={handlePncContactDateChange} addPncContact={addPncContact} removePncContact={removePncContact} editingPncContactIndex={editingPncContactIndex} startEditPncContact={startEditPncContact} cancelEditPncContact={cancelEditPncContact} postpartumProgress={postpartumProgress} prevTab={prevTab} />
+          )}
         </Tabs.Panel>
       </Tabs>
       {(() => {
-        const visits = formData.prenatal_visits || [];
-        const latestVisit = visits.length ? visits[visits.length - 1] : {};
         const hasLabPositive = (formData.lab_logs || []).some(
           (log) => log.result === 'With Anemia' || log.result === 'Positive' || log.result === 'With UTI'
         );
@@ -142,6 +156,8 @@ export default function PatientModal({
           </Button>
         );
       })()}
+      </>
+      )}
     </Modal>
   );
 }

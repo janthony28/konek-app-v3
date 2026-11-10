@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import Login from './Login';
 import SetPassword from './components/auth/SetPassword';
@@ -207,7 +207,11 @@ function MainApp({ session, onLogout }) {
   const [allowedBarangays, setAllowedBarangays] = useState([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
-  useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    if (opened || activePage !== 'dashboard') return undefined;
+    const t = setInterval(() => setCurrentTime(new Date()), 30000);
+    return () => clearInterval(t);
+  }, [opened, activePage]);
 
   useEffect(() => {
     async function initProfile() {
@@ -1015,14 +1019,15 @@ function MainApp({ session, onLogout }) {
   const postpartumProgress = Math.min((totalPostpartum / 90) * 100, 100);
   const isAborted = formData.delivery_outcome === 'AB' || formData.delivery_outcome === 'FD';
 
-  const mainContent =
+  const mainContent = useMemo(() => (
     activePage === 'dashboard' ? <DashboardView patients={patients} currentTime={currentTime} handleAddClick={handleAddClick} onFilterSelect={handleFilterSelect} /> :
       activePage === 'records' ? <RecordsView patients={patients} search={search} setSearch={setSearch} handleAddClick={handleAddClick} handleEditClick={handleEditClick} handleViewClick={handleViewClick} handleDelete={handleDelete} isAdmin={isAdmin} currentUserId={session?.user?.id} getAgeGroup={getAgeGroup} filterStatus={filterStatus} setFilterStatus={setFilterStatus} modalOpened={opened} allowedBarangays={allowedBarangays} onRefresh={fetchPatients} /> :
         activePage === 'reports' ? <ReportsView patients={patients} allowedBarangays={allowedBarangays} /> :
           activePage === 'statistics' ? <StatisticsView isAdmin={isAdmin} userId={session.user.id} allowedBarangays={allowedBarangays} onEditRecord={(recordId) => { const patient = patients.find((p) => p.id === recordId); if (patient) handleEditClick(patient); else { fetchPatients().then(() => { const fresh = patients.find((p) => p.id === recordId); if (fresh) handleEditClick(fresh); }); } }} /> :
             activePage === 'users' && isAdmin ? <UserManagementView /> :
               activePage === 'help' ? <HelpView /> :
-                activePage === 'about' ? <AboutView /> : null;
+                activePage === 'about' ? <AboutView /> : null
+  ), [activePage, patients, currentTime, search, isAdmin, session?.user?.id, filterStatus, opened, allowedBarangays]);
 
   return (
     <>
