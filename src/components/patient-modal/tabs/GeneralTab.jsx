@@ -1,4 +1,5 @@
 import { Paper, Box, Grid, TextInput, Input, NumberInput, Select, Checkbox, Stack, Group, Text, Button, Badge } from '@mantine/core';
+import { numberInputProps } from '../../../lib/numberRules';
 import { ArrowRight } from 'lucide-react';
 import { BATANGAS_BARANGAYS } from '../../../lib/constants';
 
@@ -45,7 +46,7 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
               onChange={(e) => setFormData({ ...formData, email_address: e.target.value })}
             />
           </Grid.Col>
-          <Grid.Col span={6}> <NumberInput error={formErrors.age} label="Age" withAsterisk value={formData.age === null ? '' : formData.age} onChange={(val) => setFormData({ ...formData, age: val })} /> </Grid.Col>
+          <Grid.Col span={6}> <NumberInput {...numberInputProps('age')} error={formErrors.age} label="Age" withAsterisk value={formData.age === null ? '' : formData.age} onChange={(val) => setFormData({ ...formData, age: val })} /> </Grid.Col>
           <Grid.Col span={6}> <TextInput label="Age Group" readOnly value={getAgeGroup(formData.age)} variant="filled" /> </Grid.Col>
           <Grid.Col span={6}> <Input.Wrapper label="Date of Registration"> <Input type="date" max={new Date().toISOString().split('T')[0]} value={formData.date_of_registration || ''} onChange={(e) => setFormData({ ...formData, date_of_registration: e.target.value })} /> </Input.Wrapper> </Grid.Col>
 
@@ -264,8 +265,8 @@ export default function GeneralTab({ formData, setFormData, formErrors, getAgeGr
         <Grid p="sm">
           <Grid.Col span={6}> <Input.Wrapper label="LMP (Last Menstrual Period)" withAsterisk error={formErrors.lmp}> <Input error={formErrors.lmp} type="date" max={new Date().toISOString().split('T')[0]} value={formData.lmp || ''} onChange={handleLmpChange} /> </Input.Wrapper> </Grid.Col>
           <Grid.Col span={6}> <Input.Wrapper label="EDC (Estimated Date of Confinement)"> <Input type="date" disabled style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', color: '#0ca678' }} value={formData.edc || ''} /> </Input.Wrapper> </Grid.Col>
-          <Grid.Col span={6}> <NumberInput error={formErrors.gravida} label="Gravida (No. of Pregnancies)" withAsterisk min={1} value={formData.gravida === null ? '' : formData.gravida} onChange={(val) => setFormData({ ...formData, gravida: val })} /> </Grid.Col>
-          <Grid.Col span={6}> <NumberInput error={formErrors.parity} label="Parity (No. of Births)" withAsterisk min={0} value={formData.parity === 0 ? 0 : (formData.parity ?? '')} onChange={(val) => setFormData({ ...formData, parity: val })} /> </Grid.Col>
+          <Grid.Col span={6}> <NumberInput {...numberInputProps('gravida')} error={formErrors.gravida} label="Gravida (No. of Pregnancies)" withAsterisk min={1} value={formData.gravida === null ? '' : formData.gravida} onChange={(val) => setFormData({ ...formData, gravida: val })} /> </Grid.Col>
+          <Grid.Col span={6}> <NumberInput {...numberInputProps('parity')} error={formErrors.parity} label="Parity (No. of Births)" withAsterisk min={0} value={formData.parity === 0 ? 0 : (formData.parity ?? '')} onChange={(val) => setFormData({ ...formData, parity: val })} /> </Grid.Col>
         </Grid>
       </Paper>
 

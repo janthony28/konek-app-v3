@@ -605,7 +605,11 @@ export async function exportMaternalTcl(patients, options = {}) {
       hepbResult: isHepbPos ? 1 : (hepb ? 0 : ''),
       cbcDate: cbc?.date || '',
       cbcResult: isCbcAnemia ? 1 : (cbc ? 0 : ''),
-      cbcHemoglobin: cbc?.hemoglobin || '',
+      cbcHemoglobin: (() => {
+        const raw = String(cbc?.hemoglobin ?? '').trim();
+        if (!raw) return '';
+        return /^\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw; // export valid values as real numbers
+      })(),
       gdmDate: gdm?.date || '',
       gdmResult: isGdmPos ? 1 : (gdm ? 0 : ''),
       urinalysisDate: urinalysis?.date || '',

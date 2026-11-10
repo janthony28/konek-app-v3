@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { numberInputProps, validateNumber } from '../../../lib/numberRules';
+import { notifications } from '@mantine/notifications';
 import { Paper, Box, Stack, Group, Grid, Input, Select, TextInput, Checkbox, Text, NumberInput, Button, Table, ActionIcon } from '@mantine/core';
 import { ArrowLeft, ArrowRight, Plus, Trash, Pencil } from 'lucide-react';
 import { getWeeksAOG } from '../../../lib/patientHelpers';
@@ -48,6 +50,8 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
 
   const addOrUpdateBaby = () => {
     if (!newBaby.delivery_date) return;
+    const weightErr = validateNumber('baby_weight', newBaby.weight);
+    if (weightErr) return notifications.show({ title: 'Invalid value', message: weightErr, color: 'red' });
 
     setFormData((prev) => {
       const existing = Array.isArray(prev.baby_details) ? [...prev.baby_details] : [];
@@ -241,7 +245,7 @@ export default function DeliveryTab({ formData, setFormData, formErrors, handleB
                 <Input.Wrapper label="Delivery Time">
                   <input type="time" disabled={isAborted} style={{ width: '100%', padding: '6px', border: '1px solid #ced4da', borderRadius: '4px' }} value={newBaby.delivery_time || ''} onChange={(e) => setNewBaby({ ...newBaby, delivery_time: e.target.value })} />
                 </Input.Wrapper>
-                <NumberInput disabled={isAborted} label="Weight (g)" placeholder="e.g. 3000" value={newBaby.weight} onChange={handleNewBabyWeight} />
+                <NumberInput {...numberInputProps('baby_weight')} disabled={isAborted} label="Weight (g)" placeholder="e.g. 3000" value={newBaby.weight} onChange={handleNewBabyWeight} />
                 <TextInput label="Category" readOnly value={newBaby.category || ''} placeholder="Auto" variant="filled" />
                 <Input.Wrapper label="Sex">
                   <Group mt={4} gap="xs">

@@ -1,4 +1,5 @@
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, Select, Button, Table, ActionIcon, Text, Progress, Divider, Badge, TextInput } from '@mantine/core';
+import { numberInputProps } from '../../../lib/numberRules';
 import { ArrowLeft, Trash, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
@@ -58,6 +59,7 @@ export default function PostnatalTab({
             <Grid align="end">
               <Grid.Col span={5}>
                 <NumberInput
+                  {...numberInputProps('bp_systolic')}
                   label="Systolic"
                   placeholder="e.g. 120"
                   value={newPncContact.bp_systolic}
@@ -72,6 +74,7 @@ export default function PostnatalTab({
               </Grid.Col>
               <Grid.Col span={5}>
                 <NumberInput
+                  {...numberInputProps('bp_diastolic')}
                   label="Diastolic"
                   placeholder="e.g. 80"
                   value={newPncContact.bp_diastolic}
@@ -168,7 +171,7 @@ export default function PostnatalTab({
               <Stack gap="xs">
                 <Group grow>
                   <Input type="date" max={new Date().toISOString().split('T')[0]} value={newPostpartumLog.date} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, date: e.target.value })} />
-                  <NumberInput placeholder="Tabs" value={newPostpartumLog.count} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, count: v })} />
+                  <NumberInput {...numberInputProps('tabs')} placeholder="Tabs" value={newPostpartumLog.count} onChange={(v) => setNewPostpartumLog({ ...newPostpartumLog, count: v })} />
                 </Group>
                 <TextInput placeholder="Remarks (Optional)" value={newPostpartumLog.remarks || ''} onChange={(e) => setNewPostpartumLog({ ...newPostpartumLog, remarks: e.target.value.toUpperCase() })} />
                 <Group gap={4}>

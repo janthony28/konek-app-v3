@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { numberInputProps } from '../../../lib/numberRules';
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, TextInput, Table, Button, ActionIcon, Text, Modal, Badge } from '@mantine/core';
 import { ArrowLeft, ArrowRight, Trash, Pencil, Plus } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
@@ -68,14 +69,15 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
             <TextInput label="Trimester" readOnly value={newVisit.trimester} placeholder="Auto" />
           </Group>
           <Grid>
-            <Grid.Col span={3}> <NumberInput label="Ht (cm)" value={newVisit.height} onChange={(val) => handleBMIChange('height', val)} /> </Grid.Col>
-            <Grid.Col span={3}> <NumberInput label="Wt (kg)" value={newVisit.weight} onChange={(val) => handleBMIChange('weight', val)} /> </Grid.Col>
+            <Grid.Col span={3}> <NumberInput {...numberInputProps('height')} label="Ht (cm)" placeholder="e.g. 155.5" value={newVisit.height} onChange={(val) => handleBMIChange('height', val)} /> </Grid.Col>
+            <Grid.Col span={3}> <NumberInput {...numberInputProps('weight')} label="Wt (kg)" placeholder="e.g. 55.2" value={newVisit.weight} onChange={(val) => handleBMIChange('weight', val)} /> </Grid.Col>
             <Grid.Col span={3}> <TextInput label="BMI" readOnly value={newVisit.bmi} /> </Grid.Col>
             <Grid.Col span={3}> <TextInput label="Category" readOnly value={newVisit.bmi_category} /> </Grid.Col>
           </Grid>
           <Grid align="end">
             <Grid.Col span={3}>
               <NumberInput
+                {...numberInputProps('bp_systolic')}
                 label="Systolic (mmHg)"
                 placeholder="e.g. 120"
                 value={newVisit.bp_systolic}
@@ -89,6 +91,7 @@ export default function PrenatalTab({ formData, setFormData, newVisit, setNewVis
             </Grid.Col>
             <Grid.Col span={3}>
               <NumberInput
+                {...numberInputProps('bp_diastolic')}
                 label="Diastolic (mmHg)"
                 placeholder="e.g. 80"
                 value={newVisit.bp_diastolic}

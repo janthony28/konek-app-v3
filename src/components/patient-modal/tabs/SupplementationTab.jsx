@@ -1,4 +1,5 @@
 import { Paper, Box, Stack, Group, Grid, Input, NumberInput, Button, ActionIcon, Text, Progress, Divider, Checkbox, Badge, Select, TextInput } from '@mantine/core';
+import { numberInputProps } from '../../../lib/numberRules';
 import { ArrowLeft, ArrowRight, X, Pencil } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters';
 
@@ -75,7 +76,7 @@ export default function SupplementationTab({
                 />
               )}
               <Divider />
-              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'IFA' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'IFA', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'IFA' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'IFA', count: v })} /></Group>
+              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'IFA' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'IFA', date: e.target.value })} /> <NumberInput {...numberInputProps('tabs')} placeholder="Tabs" value={newSupp.type === 'IFA' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'IFA', count: v })} /></Group>
               <Group gap={4}>
                 <Button size="xs" variant="light" onClick={addSupplement}>{editingSupp?.type === 'IFA' ? `Update Log (${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_ifa.length})` : '+ Add Log'}</Button>
                 {editingSupp?.type === 'IFA' && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditSupplement}>Cancel</Button>}
@@ -119,7 +120,7 @@ export default function SupplementationTab({
                 />
               )}
               <Divider />
-              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'MMS' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'MMS', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'MMS' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'MMS', count: v })} /></Group>
+              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'MMS' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'MMS', date: e.target.value })} /> <NumberInput {...numberInputProps('tabs')} placeholder="Tabs" value={newSupp.type === 'MMS' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'MMS', count: v })} /></Group>
               <Group gap={4}>
                 <Button size="xs" variant="light" color="teal" onClick={addSupplement}>{editingSupp?.type === 'MMS' ? `Update Log (${(editingSupp?.index ?? 0) + 1} of ${formData.supplements_mms.length})` : '+ Add Log'}</Button>
                 {editingSupp?.type === 'MMS' && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditSupplement}>Cancel</Button>}
@@ -174,7 +175,7 @@ export default function SupplementationTab({
                 />
               )}
               <Divider />
-              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'Calcium' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'Calcium', date: e.target.value })} /> <NumberInput placeholder="Tabs" value={newSupp.type === 'Calcium' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'Calcium', count: v })} /></Group>
+              <Group grow><Input type="date" max={new Date().toISOString().split('T')[0]} value={newSupp.type === 'Calcium' ? newSupp.date : ''} onChange={(e) => setNewSupp({ ...newSupp, type: 'Calcium', date: e.target.value })} /> <NumberInput {...numberInputProps('tabs')} placeholder="Tabs" value={newSupp.type === 'Calcium' ? newSupp.count : ''} onChange={(v) => setNewSupp({ ...newSupp, type: 'Calcium', count: v })} /></Group>
               <Group gap={4}>
                 <Button size="xs" variant="light" color="orange" onClick={addSupplement}>{editingSupp?.type === 'Calcium' ? `Update Log (${(editingSupp?.index ?? 0) + 1} of ${(formData.supplements_calcium || []).length})` : '+ Add Log'}</Button>
                 {editingSupp?.type === 'Calcium' && <Button size="xs" variant="subtle" color="gray" onClick={cancelEditSupplement}>Cancel</Button>}

@@ -37,8 +37,13 @@ export default function LabsTab({ formData, setFormData, newLab, setNewLab, addL
             <TextInput
               label="Hemoglobin (g/dL)"
               placeholder="e.g. 12.5"
+              inputMode="decimal"
               value={newLab.hemoglobin || ''}
-              onChange={(e) => setNewLab({ ...newLab, hemoglobin: e.target.value })}
+              onChange={(e) => {
+                // Allow only digits with at most one decimal point (e.g. 12.5)
+                const v = e.target.value;
+                if (v === '' || /^\d*(\.\d*)?$/.test(v)) setNewLab({ ...newLab, hemoglobin: v });
+              }}
               style={{ maxWidth: 200 }}
             />
           )}

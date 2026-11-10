@@ -6,6 +6,7 @@ import TermsAcceptanceModal from './components/legal/TermsAcceptanceModal';
 import { hasUserAcceptedTerms, setUserAcceptedTerms } from './lib/termsContent';
 import { getAgeGroup, calculateEDC, calculateAOGData, isPatientDue, parseOthers, getLatestPrenatalVisit, getRawWeeksAOG } from './lib/patientHelpers';
 import { formatDate } from './lib/formatters';
+import { validateNumber } from './lib/numberRules';
 import { getInitialFormState } from './lib/initialFormState';
 import DashboardView from './components/dashboard/DashboardView';
 import RecordsView from './components/records/RecordsView';
@@ -444,6 +445,12 @@ function MainApp({ session, onLogout }) {
       return;
     }
     if (newVisit.trimester === '1st Trimester' && (newVisit.weight === '' || newVisit.weight == null)) return notifications.show({ title: 'Required', message: 'Weight is required for 1st trimester visits.', color: 'red' });
+    {
+      const numErr = validateNumber('height', newVisit.height) || validateNumber('weight', newVisit.weight)
+        || validateNumber('bp_systolic', newVisit.bp_systolic) || validateNumber('bp_diastolic', newVisit.bp_diastolic)
+        || (newVisit.bp_systolic !== '' && newVisit.bp_systolic != null && newVisit.bp_diastolic !== '' && newVisit.bp_diastolic != null && Number(newVisit.bp_systolic) <= Number(newVisit.bp_diastolic) ? 'Systolic BP must be higher than diastolic BP.' : null);
+      if (numErr) return notifications.show({ title: 'Invalid value', message: numErr, color: 'red' });
+    }
     const otherVisits = editingVisitIndex != null ? formData.prenatal_visits.filter((_, idx) => idx !== editingVisitIndex) : formData.prenatal_visits;
     if (editingVisitIndex != null) {
       const { previousDate, nextDate } = getVisitDateBoundsForEditing(formData.prenatal_visits, editingVisitIndex);
@@ -500,6 +507,7 @@ function MainApp({ session, onLogout }) {
 
   const addSupplement = () => {
     if (!newSupp.date || !newSupp.count) return notifications.show({ title: 'Required', message: 'Please enter date and count.', color: 'red' });
+    { const numErr = validateNumber('tabs', newSupp.count); if (numErr) return notifications.show({ title: 'Invalid value', message: numErr, color: 'red' }); }
     const list = newSupp.type === 'IFA' ? formData.supplements_ifa : newSupp.type === 'Calcium' ? formData.supplements_calcium : formData.supplements_mms;
     const label = newSupp.type === 'IFA' ? 'IFA' : newSupp.type === 'Calcium' ? 'Calcium' : 'MMS';
     if (editingSupp != null && editingSupp.type === newSupp.type) {
@@ -554,6 +562,12 @@ function MainApp({ session, onLogout }) {
   const addLabLog = () => {
     if (!newLab.date) return notifications.show({ title: 'Required', message: 'Date is required.', color: 'red' });
     if (!newLab.result) return notifications.show({ title: 'Required', message: 'Result is required.', color: 'red' });
+    if (newLab.type === 'CBC' && String(newLab.hemoglobin ?? '').trim() !== '') {
+      const hgbStr = String(newLab.hemoglobin).trim();
+      if (!/^\d+(\.\d+)?$/.test(hgbStr)) {
+        return notifications.show({ title: 'Invalid Hemoglobin', message: 'Hemoglobin must be a valid number (e.g. 12.5).', color: 'red' });
+      }
+    }
     const logs = formData.lab_logs || [];
     if (editingLabIndex != null) {
       const next = [...logs];
@@ -591,6 +605,7 @@ function MainApp({ session, onLogout }) {
 
   const addPostpartumLog = () => {
     if (!newPostpartumLog.date || !newPostpartumLog.count) return notifications.show({ title: 'Required', message: 'Date and count are required.', color: 'red' });
+    { const numErr = validateNumber('tabs', newPostpartumLog.count); if (numErr) return notifications.show({ title: 'Invalid value', message: numErr, color: 'red' }); }
     const logs = formData.postpartum_logs || [];
     if (editingPostpartumIndex != null) {
       const { previousDate, nextDate } = getLogDateBoundsForEditing(logs, editingPostpartumIndex);
@@ -664,6 +679,12 @@ function MainApp({ session, onLogout }) {
 
   const addPncContact = () => {
     if (!newPncContact.date) return notifications.show({ title: 'Required', message: 'Please enter contact date.', color: 'red' });
+    {
+      const s = newPncContact.bp_systolic, d = newPncContact.bp_diastolic;
+      const numErr = validateNumber('bp_systolic', s) || validateNumber('bp_diastolic', d)
+        || (s !== '' && s != null && d !== '' && d != null && Number(s) <= Number(d) ? 'Systolic BP must be higher than diastolic BP.' : null);
+      if (numErr) return notifications.show({ title: 'Invalid value', message: numErr, color: 'red' });
+    }
     const list = formData.pnc_contacts || [];
     if (editingPncContactIndex != null) {
       const { previousDate, nextDate } = getPncContactDateBoundsForEditing(list, editingPncContactIndex);
@@ -814,6 +835,9 @@ function MainApp({ session, onLogout }) {
     if (isInvalid(formData.lmp)) setError('lmp', 'general', 'LMP is required');
     if (isInvalid(formData.gravida)) setError('gravida', 'general', 'Gravida is required');
     if (isInvalid(formData.parity)) setError('parity', 'general', 'Parity is required');
+    { const e = validateNumber('age', formData.age); if (e) setError('age', 'general', e); }
+    { const e = validateNumber('gravida', formData.gravida); if (e) setError('gravida', 'general', e); }
+    { const e = validateNumber('parity', formData.parity); if (e) setError('parity', 'general', e); }
     const isAbortedCheck = formData.delivery_outcome === 'AB' || formData.delivery_outcome === 'FD';
     const hasDelivered = !!(formData.delivery_outcome && String(formData.delivery_outcome).trim());
     if (hasDelivered && !isAbortedCheck && isInvalid(formData.delivery_mode)) setError('delivery_mode', 'delivery', 'Delivery type is required');
