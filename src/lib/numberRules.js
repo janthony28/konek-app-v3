@@ -2,7 +2,7 @@
 // Used both for input restrictions (NumberInput props) and for validation before saving.
 export const NUMBER_RULES = {
   age: { label: 'Age', decimal: false },
-  gravida: { label: 'Gravida', decimal: false },
+  gravida: { label: 'Gravidity', decimal: false },
   parity: { label: 'Parity', decimal: false },
   height: { label: 'Height', decimal: true },
   weight: { label: 'Weight', decimal: true },

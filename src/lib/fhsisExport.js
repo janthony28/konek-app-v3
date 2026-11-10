@@ -367,7 +367,7 @@ export async function exportMaternalTcl(patients, options = {}) {
     { header: 'GSIS Member\n1=Yes, 0=No', key: 'gsisMember', width: 12, group: 'demo' },
     // Pregnancy Details (14-17)
     { header: 'LMP\n(mm/dd/yy)', key: 'lmp', width: 13, group: 'pregnancy' },
-    { header: 'Gravida', key: 'gravida', width: 8, group: 'pregnancy' },
+    { header: 'Gravidity', key: 'gravida', width: 9, group: 'pregnancy' },
     { header: 'Parity', key: 'parity', width: 8, group: 'pregnancy' },
     { header: 'EDD\n(mm/dd/yy)', key: 'edd', width: 13, group: 'pregnancy' },
     // ANC Visits (18-25)

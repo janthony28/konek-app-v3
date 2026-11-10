@@ -840,7 +840,7 @@ function MainApp({ session, onLogout }) {
     if (isInvalid(formData.barangay)) setError('barangay', 'general', 'Barangay is required');
     if (isInvalid(formData.address)) setError('address', 'general', 'Address is required');
     if (isInvalid(formData.lmp)) setError('lmp', 'general', 'LMP is required');
-    if (isInvalid(formData.gravida)) setError('gravida', 'general', 'Gravida is required');
+    if (isInvalid(formData.gravida)) setError('gravida', 'general', 'Gravidity is required');
     if (isInvalid(formData.parity)) setError('parity', 'general', 'Parity is required');
     if (isInvalid(formData.civil_status)) setError('civil_status', 'general', 'Civil status is required');
     if (formData.is_solo_parent !== true && formData.is_solo_parent !== false) setError('is_solo_parent', 'general', 'Please select Yes or No');

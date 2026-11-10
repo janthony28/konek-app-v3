@@ -10,9 +10,9 @@ const FAQ_ITEMS = [
         <Text size="sm" mb="xs">To add a new maternal record:</Text>
         <List size="sm" spacing="xs">
           <List.Item>Go to <strong>Dashboard</strong> or <strong>Records</strong> and click the <strong>Add record</strong> button (or the plus icon in the header).</List.Item>
-          <List.Item>Fill in the <strong>General Data</strong> tab: last name, first name, age, barangay, address, LMP (last menstrual period), gravida, parity, and other required fields.</List.Item>
+          <List.Item>Fill in the <strong>General Data</strong> tab: last name, first name, age, barangay, address, LMP (last menstrual period), gravidity, parity, and other required fields.</List.Item>
           <List.Item>Use the <strong>Next</strong> button or click the other tabs to complete <strong>Prenatal Checkup (8ANC)</strong>, <strong>Immunization</strong>, <strong>Supplementation</strong>, <strong>Laboratory Screenings</strong>, <strong>Labor &amp; Delivery</strong>, and <strong>Postnatal Care</strong> as applicable.</List.Item>
-          <List.Item>Click <strong>Save</strong> at the bottom when done. Required fields (e.g. last name, first name, age, barangay, address, LMP, gravida, parity) must be filled or the form will show errors and scroll to the first error.</List.Item>
+          <List.Item>Click <strong>Save</strong> at the bottom when done. Required fields (e.g. last name, first name, age, barangay, address, LMP, gravidity, parity) must be filled or the form will show errors and scroll to the first error.</List.Item>
         </List>
       </>
     ),
@@ -68,7 +68,7 @@ const FAQ_ITEMS = [
       <>
         <Text size="sm" mb="xs">The add/edit form has seven tabs:</Text>
         <List size="sm" spacing="xs">
-          <List.Item><strong>General Data</strong> — name, age, address, barangay, LMP, EDC, gravida, parity, etc.</List.Item>
+          <List.Item><strong>General Data</strong> — name, age, address, barangay, LMP, EDC, gravidity, parity, etc.</List.Item>
           <List.Item><strong>Prenatal Checkup (8ANC)</strong> — prenatal visits with date, AOG, trimester, weight, height, BMI, remarks. Add visits in date order; visit date must be after the last one and not beyond 43 weeks AOG.</List.Item>
           <List.Item><strong>Immunization Status</strong> — TD1–TD5 dates; mark if TD was completed previously.</List.Item>
           <List.Item><strong>Prenatal Supplementation</strong> — IFA, MMS, and Calcium logs (date and count). Add entries in chronological order.</List.Item>

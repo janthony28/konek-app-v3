@@ -204,7 +204,7 @@ export default function ViewRecordModal({ patient, opened, onClose, onEdit }) {
                   <Text size="sm" fw={500}>{formatDate(p.date_of_registration) || '—'}</Text>
                 </Grid.Col>
                 <Grid.Col span={6}>
-                  <Text size="xs" c="dimmed" fw={600}>Gravida</Text>
+                  <Text size="xs" c="dimmed" fw={600}>Gravidity</Text>
                   <Text size="sm" fw={700}>G{p.gravida ?? '—'}</Text>
                 </Grid.Col>
                 <Grid.Col span={6}>
