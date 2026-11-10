@@ -760,6 +760,7 @@ function MainApp({ session, onLogout }) {
 
   const handleEditClick = (patient) => {
     const attendant = parseOthers(patient.delivery_attendant);
+    const deliveryModeParsed = parseOthers(patient.delivery_mode);
     const cleanData = {};
     Object.keys(initialFormState).forEach((key) => {
       if (patient[key] === null || patient[key] === undefined) cleanData[key] = initialFormState[key];
@@ -799,6 +800,8 @@ function MainApp({ session, onLogout }) {
       manual_risk: patient.manual_risk != null ? !!patient.manual_risk : !!patient.is_high_risk,
       delivery_attendant: attendant.main,
       delivery_attendant_specify: attendant.specify,
+      delivery_mode: deliveryModeParsed.main,
+      delivery_mode_specify: deliveryModeParsed.specify,
       prenatal_visits: patient.prenatal_visits || [],
       supplements_ifa: patient.supplements_ifa || [],
       supplements_calcium: patient.supplements_calcium || [],
@@ -872,6 +875,7 @@ function MainApp({ session, onLogout }) {
       const latest = getLatestPrenatalVisit(formData.prenatal_visits) || {};
       const calculatedIfaCount = (formData.postpartum_logs || []).reduce((sum, item) => sum + (Number(item.count) || 0), 0);
       const finalAttendant = formData.delivery_attendant === 'Others' ? `Others: ${formData.delivery_attendant_specify}` : formData.delivery_attendant;
+      const finalDeliveryMode = formData.delivery_mode === 'Others' && formData.delivery_mode_specify ? `Others: ${formData.delivery_mode_specify}` : formData.delivery_mode;
 
       const pncContactsSorted = [...(formData.pnc_contacts || [])].sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')));
       const pncFirstFour = pncContactsSorted.slice(0, 4);
@@ -907,6 +911,7 @@ function MainApp({ session, onLogout }) {
         bmi: latest.bmi || null,
         bmi_category: latest.bmi_category || null,
         delivery_attendant: finalAttendant,
+        delivery_mode: finalDeliveryMode,
         postpartum_ifa_count: calculatedIfaCount,
         pnc_date_1: pncDate1 || null,
         pnc_date_2: pncDate2 || null,
@@ -922,6 +927,7 @@ function MainApp({ session, onLogout }) {
 
       // UI-only / helper fields that should not be sent to Supabase
       delete rawPayload.delivery_attendant_specify;
+      delete rawPayload.delivery_mode_specify;
       delete rawPayload.delivery_place_specify;
       delete rawPayload.pnc_contacts;
       delete rawPayload.calcium_carbonate_date_completed;

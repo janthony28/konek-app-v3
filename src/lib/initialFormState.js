@@ -101,6 +101,7 @@ export function getInitialFormState() {
     vit_a_completed_date: '',
 
     delivery_attendant_specify: '',
+    delivery_mode_specify: '',
     delivery_place_specify: '',
 
     // General Data fields
