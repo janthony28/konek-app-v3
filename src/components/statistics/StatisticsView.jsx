@@ -1,11 +1,50 @@
-import { useEffect, useState } from 'react';
-import { ActionIcon, Alert, Button, Divider, Grid, Group, Loader, Modal, Paper, ScrollArea, Stack, Table, Text, ThemeIcon, Title, Tooltip as MantineTooltip } from '@mantine/core';
-import { BarChart3, Baby, Download, Edit2, HeartPulse, PieChart as PieChartIcon, RefreshCw, Shield, UserCheck } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ActionIcon,
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Grid,
+  Group,
+  Loader,
+  Modal,
+  Paper,
+  Progress,
+  RingProgress,
+  ScrollArea,
+  Select,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  ThemeIcon,
+  Title,
+  Tooltip as MantineTooltip,
+} from '@mantine/core';
+import {
+  Activity,
+  AlertTriangle,
+  Baby,
+  BarChart3,
+  CheckCircle2,
+  Download,
+  Edit2,
+  FilterX,
+  HeartPulse,
+  PieChart as PieChartIcon,
+  RefreshCw,
+  Shield,
+  UserCheck,
+  Users,
+} from 'lucide-react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -14,8 +53,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { fetchStatisticsData } from '../../services/statisticsService';
+import { buildMaternalStatistics, fetchStatisticsData } from '../../services/statisticsService';
 import { exportChartToExcel } from '../../lib/statisticsExport';
+import { BATANGAS_BARANGAYS } from '../../lib/constants';
 
 /* ── Color palette ────────────────────────────────────────────────────── */
 const COLORS = {
@@ -26,23 +66,43 @@ const COLORS = {
   purple: '#845ef7',
   teal: '#12b886',
   pink: '#e64980',
-  gray: '#868e96',
+  gray: '#adb5bd',
+  lightTrack: '#f1f3f5',
 };
 
+const RISK_BAR_SHADES = ['#e03131', '#f03e3e', '#fa5252', '#ff6b6b', '#ff8787', '#ffa8a8'];
 const PIE_YES_NO = [COLORS.green, COLORS.orange];
 const PIE_3WAY = [COLORS.green, COLORS.blue, COLORS.orange];
-const PIE_COMPLETION = [COLORS.teal, COLORS.red];
+const PIE_COMPLETION = [COLORS.teal, '#ffe3e3'];
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = [
+  { value: '', label: 'All years' },
+  ...Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((y) => ({
+    value: String(y),
+    label: String(y),
+  })),
+];
 
 /* ── Reusable chart wrapper ───────────────────────────────────────────── */
-function ChartPaper({ title, subtitle, icon, children, height = 320, onExport }) {
+function ChartPaper({ title, subtitle, icon, color = 'teal', children, height = 310, onExport }) {
   return (
-    <Paper withBorder radius="md" p="md" h="100%">
-      <Group justify="space-between" mb="xs">
+    <Paper
+      withBorder
+      radius="md"
+      p="md"
+      h="100%"
+      style={{
+        transition: 'box-shadow 150ms ease, transform 150ms ease',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      }}
+    >
+      <Group justify="space-between" mb="xs" wrap="nowrap">
         <div>
-          <Text fw={700}>{title}</Text>
+          <Text fw={700} size="sm">{title}</Text>
           {subtitle ? <Text size="xs" c="dimmed">{subtitle}</Text> : null}
         </div>
-        <Group gap={6}>
+        <Group gap={6} wrap="nowrap">
           {onExport && (
             <MantineTooltip label="Export to Excel" position="left" withArrow>
               <ActionIcon variant="light" color="teal" size="sm" onClick={onExport}>
@@ -50,24 +110,145 @@ function ChartPaper({ title, subtitle, icon, children, height = 320, onExport })
               </ActionIcon>
             </MantineTooltip>
           )}
-          <ThemeIcon variant="light" color="teal">
+          <ThemeIcon variant="light" color={color} radius="md">
             {icon}
           </ThemeIcon>
         </Group>
       </Group>
-      <div style={{ width: '100%', height }}>{children}</div>
+      <div style={{ width: '100%', height, position: 'relative' }}>{children}</div>
     </Paper>
+  );
+}
+
+/* ── Donut chart with center KPI overlay ──────────────────────────────── */
+function DonutChartWithCenter({
+  data,
+  colors,
+  onSliceClick,
+  tooltipContent,
+  centerValue,
+  centerLabel,
+  centerColor = '#212529',
+}) {
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '44%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      >
+        <Text fw={800} size="xl" lh={1.1} style={{ color: centerColor }}>
+          {centerValue}
+        </Text>
+        {centerLabel && (
+          <Text size="10px" fw={600} c="dimmed" tt="uppercase" mt={2}>
+            {centerLabel}
+          </Text>
+        )}
+      </div>
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="44%"
+            innerRadius={56}
+            outerRadius={86}
+            paddingAngle={3}
+            cornerRadius={6}
+            onClick={onSliceClick}
+            style={{ cursor: 'pointer', outline: 'none' }}
+          >
+            {data.map((entry, i) => (
+              <Cell key={entry.name} fill={colors[i % colors.length]} stroke="none" />
+            ))}
+          </Pie>
+          <Tooltip content={tooltipContent || <SimplePieTooltip />} />
+          <Legend verticalAlign="bottom" height={32} iconType="circle" />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/* ── Semi-circle radial gauge for completion targets ──────────────────── */
+function CompletionGaugeChart({
+  completed,
+  notCompleted,
+  rate,
+  accentColor = COLORS.teal,
+  onSliceClick,
+}) {
+  const data = [
+    { name: 'Completed', value: completed },
+    { name: 'Not Completed', value: notCompleted },
+  ];
+  const total = completed + notCompleted;
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '56%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      >
+        <Text fw={800} size="2rem" lh={1} style={{ color: accentColor }}>
+          {rate}%
+        </Text>
+        <Text size="xs" c="dimmed" fw={600} mt={4}>
+          {completed} of {total} mothers
+        </Text>
+      </div>
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="64%"
+            startAngle={180}
+            endAngle={0}
+            innerRadius={68}
+            outerRadius={98}
+            paddingAngle={2}
+            cornerRadius={8}
+            onClick={onSliceClick}
+            style={{ cursor: 'pointer', outline: 'none' }}
+          >
+            <Cell fill={accentColor} stroke="none" />
+            <Cell fill={COLORS.lightTrack} stroke="none" />
+          </Pie>
+          <Tooltip content={<SimplePieTooltip />} />
+          <Legend verticalAlign="bottom" height={32} iconType="circle" />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
 /* ── Tooltip styling ──────────────────────────────────────────────────── */
 function tooltipStyle() {
   return {
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: 'rgba(255,255,255,0.97)',
     border: '1px solid #dee2e6',
     borderRadius: 8,
     padding: '10px 14px',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+    boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
     fontSize: 13,
   };
 }
@@ -114,31 +295,61 @@ function SimplePieTooltip({ active, payload }) {
   );
 }
 
-/** Percentage label on pie slices */
-function renderPercentLabel({ percent: pct }) {
-  if (!pct) return null;
-  return `${(pct * 100).toFixed(0)}%`;
+/** Extract year from a record's registration date, LMP, or created_at */
+function getRecordYear(record) {
+  const candidates = [
+    record?.date_of_registration,
+    record?.date_registered,
+    record?.lmp,
+    record?.created_at,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    const m = String(c).match(/^(\d{4})/);
+    if (m) return m[1];
+  }
+  return '';
+}
+
+/** Helper to calculate a rounded percentage */
+function pctOf(part, total) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
 
-export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
+export default function StatisticsView({ isAdmin, userId, allowedBarangays = [], onEditRecord }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [stats, setStats] = useState(null);
+  const [rawRecords, setRawRecords] = useState([]);
+
+  // Filters
+  const [selectedBarangay, setSelectedBarangay] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
 
   // Modal state for record list
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalRecords, setModalRecords] = useState([]); // Array of { id, name }
 
+  const barangayOptions = useMemo(
+    () => [
+      { value: '', label: 'All barangays' },
+      ...(allowedBarangays.length > 0
+        ? allowedBarangays.map((b) => ({ value: b, label: b }))
+        : BATANGAS_BARANGAYS),
+    ],
+    [allowedBarangays]
+  );
+
   async function loadStats({ showLoader = true } = {}) {
     if (showLoader) setLoading(true);
     setError('');
     try {
       const data = await fetchStatisticsData({ isAdmin, userId });
-      setStats(data);
+      setRawRecords(data?.rawRecords || []);
     } catch (err) {
       setError(err?.message || 'Failed to load statistics.');
     } finally {
@@ -149,6 +360,16 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   useEffect(() => {
     loadStats();
   }, [isAdmin, userId]);
+
+  const filteredRecords = useMemo(() => {
+    return rawRecords.filter((r) => {
+      if (selectedBarangay && r.barangay !== selectedBarangay) return false;
+      if (selectedYear && getRecordYear(r) !== selectedYear) return false;
+      return true;
+    });
+  }, [rawRecords, selectedBarangay, selectedYear]);
+
+  const stats = useMemo(() => buildMaternalStatistics(filteredRecords), [filteredRecords]);
 
   /** Open the record list modal */
   function showRecords(title, records) {
@@ -162,7 +383,6 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   function handleEdit(recordEntry) {
     if (!onEditRecord || !recordEntry?.id) return;
     setModalOpen(false);
-    // Small delay for modal close animation
     setTimeout(() => onEditRecord(recordEntry.id), 150);
   }
 
@@ -182,10 +402,11 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
     );
   }
 
+  const totalMothers = stats?.totals?.mothers || 0;
   const gd = stats?.generalData || {};
   const pr = stats?.pregnancyRelated || {};
 
-  /* ── Build pie data arrays ──────────────────────────────────────────── */
+  /* ── Build chart data arrays ────────────────────────────────────────── */
 
   // Solo Parent
   const soloParentData = [
@@ -213,6 +434,7 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   const phColors = gd.philhealth?.unknown
     ? [COLORS.green, COLORS.blue, COLORS.orange, COLORS.gray]
     : PIE_3WAY;
+  const phCoveredCount = (gd.philhealth?.member || 0) + (gd.philhealth?.dependent || 0);
 
   // SSS
   const sssData = [
@@ -238,19 +460,7 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   if (gd.birthRegistration?.unknown) birthRegData.push({ name: 'Unknown', value: gd.birthRegistration.unknown });
   const birthRegColors = gd.birthRegistration?.unknown ? [COLORS.green, COLORS.red, COLORS.gray] : [COLORS.green, COLORS.red];
 
-  // 8 ANC Completion
-  const ancData = [
-    { name: 'Completed', value: pr.ancCompletion?.completed || 0 },
-    { name: 'Not Completed', value: pr.ancCompletion?.notCompleted || 0 },
-  ];
-
-  // 4 PNC Completion
-  const pncData = [
-    { name: 'Completed', value: pr.postpartumCompletion?.completed || 0 },
-    { name: 'Not Completed', value: pr.postpartumCompletion?.notCompleted || 0 },
-  ];
-
-  // High Risk (pie chart)
+  // High Risk (donut chart)
   const highRiskPieData = [
     { name: 'High Risk', value: pr.highRisk?.highRiskCount || 0 },
     { name: 'Normal', value: pr.highRisk?.normalCount || 0 },
@@ -262,6 +472,49 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   const teenageCount = pr.teenagePregnancy?.count || 0;
   const teenageRate = pr.teenagePregnancy?.rate || 0;
   const teenageTotal = pr.teenagePregnancy?.total || 0;
+
+  // Coverage comparison rows
+  const coverageOverview = [
+    {
+      label: 'PhilHealth Covered (Member / Dependent)',
+      count: phCoveredCount,
+      pct: pctOf(phCoveredCount, totalMothers),
+      color: 'teal',
+      onClick: () =>
+        showRecords('PhilHealth — Member & Dependent', [
+          ...(gd.philhealth?.records?.Member || []),
+          ...(gd.philhealth?.records?.Dependent || []),
+        ]),
+    },
+    {
+      label: '4Ps Beneficiaries',
+      count: gd.fourPs?.yes || 0,
+      pct: pctOf(gd.fourPs?.yes || 0, totalMothers),
+      color: 'blue',
+      onClick: () => showRecords('4Ps Member — Yes', gd.fourPs?.records?.Yes || []),
+    },
+    {
+      label: 'SSS Members',
+      count: gd.sss?.member || 0,
+      pct: pctOf(gd.sss?.member || 0, totalMothers),
+      color: 'indigo',
+      onClick: () => showRecords('SSS — Member', gd.sss?.records?.Member || []),
+    },
+    {
+      label: 'GSIS Members',
+      count: gd.gsis?.member || 0,
+      pct: pctOf(gd.gsis?.member || 0, totalMothers),
+      color: 'violet',
+      onClick: () => showRecords('GSIS — Member', gd.gsis?.records?.Member || []),
+    },
+    {
+      label: 'Solo Parents',
+      count: gd.soloParent?.yes || 0,
+      pct: pctOf(gd.soloParent?.yes || 0, totalMothers),
+      color: 'orange',
+      onClick: () => showRecords('Solo Parent — Yes', gd.soloParent?.records?.Yes || []),
+    },
+  ];
 
   /* ── Click handlers ─────────────────────────────────────────────────── */
 
@@ -277,15 +530,15 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
   function onBarClick(chartLabel) {
     return (data) => {
       if (!data) return;
-      const reason = data.reason || data.name;
-      const records = data.records || [];
-      showRecords(`${chartLabel} — ${reason}`, records);
+      const payload = data?.payload || data;
+      const reason = payload.reason || payload.name;
+      const records = payload.records || [];
+      if (reason) showRecords(`${chartLabel} — ${reason}`, records);
     };
   }
 
   /* ── Export helpers ─────────────────────────────────────────────────── */
 
-  /** Build categories array from a records-object (keys → labels) */
   function categoriesFromRecords(recordsObj) {
     return Object.entries(recordsObj || {}).map(([label, recs]) => ({
       label,
@@ -315,34 +568,193 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
     });
   }
 
+  const hasFilters = Boolean(selectedBarangay || selectedYear);
+
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <Stack gap="lg">
-      <Group justify="space-between" wrap="wrap">
-        <div>
-          <Group gap="sm">
-            <Title order={3}>Statistics Dashboard</Title>
-            <Button
-              variant="filled"
-              color="teal"
-              size="compact-md"
-              radius="md"
-              loading={refreshing}
-              leftSection={<RefreshCw size={16} />}
-              onClick={async () => {
-                setRefreshing(true);
-                try { await loadStats({ showLoader: false }); } finally { setRefreshing(false); }
-              }}
-            >
-              Refresh
-            </Button>
+      {/* ═══════ HEADER + FILTERS ═══════ */}
+      <Paper withBorder radius="md" p="md" bg="white">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
+          <div>
+            <Group gap="sm">
+              <Title order={3}>Statistics Dashboard</Title>
+              <Badge variant="light" color="teal" size="lg">
+                {totalMothers} Mother{totalMothers !== 1 ? 's' : ''}
+              </Badge>
+              <Button
+                variant="light"
+                color="teal"
+                size="compact-sm"
+                radius="md"
+                loading={refreshing}
+                leftSection={<RefreshCw size={14} />}
+                onClick={async () => {
+                  setRefreshing(true);
+                  try {
+                    await loadStats({ showLoader: false });
+                  } finally {
+                    setRefreshing(false);
+                  }
+                }}
+              >
+                Refresh
+              </Button>
+            </Group>
+            <Text c="dimmed" size="xs" mt={4}>
+              Click any chart segment, bar, or summary card to inspect and edit matching patient records.
+            </Text>
+          </div>
+
+          <Group gap="sm" align="flex-end" wrap="wrap">
+            <Select
+              label="Barangay"
+              placeholder="All barangays"
+              data={barangayOptions}
+              value={selectedBarangay}
+              onChange={(v) => setSelectedBarangay(v ?? '')}
+              clearable
+              size="xs"
+              w={190}
+            />
+            <Select
+              label="Year"
+              placeholder="All years"
+              data={YEAR_OPTIONS}
+              value={selectedYear}
+              onChange={(v) => setSelectedYear(v ?? '')}
+              clearable
+              size="xs"
+              w={130}
+            />
+            {hasFilters && (
+              <Button
+                variant="subtle"
+                color="gray"
+                size="xs"
+                leftSection={<FilterX size={14} />}
+                onClick={() => {
+                  setSelectedBarangay('');
+                  setSelectedYear('');
+                }}
+              >
+                Reset
+              </Button>
+            )}
           </Group>
-          <Text c="dimmed" size="sm">
-            Aggregated from {stats?.totals?.mothers || 0} maternal record{(stats?.totals?.mothers || 0) !== 1 ? 's' : ''}.
-            <Text span size="xs" c="dimmed" ml={8} fs="italic">Click any slice or bar to view the matching records.</Text>
-          </Text>
-        </div>
-      </Group>
+        </Group>
+      </Paper>
+
+      {/* ═══════ TOP KPI SUMMARY STRIP ═══════ */}
+      <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="md">
+        <Paper
+          withBorder
+          radius="md"
+          p="md"
+          style={{ borderLeft: `4px solid ${COLORS.teal}` }}
+        >
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Total Tracked Mothers
+              </Text>
+              <Text size="2rem" fw={800} lh={1.1} mt={4}>
+                {totalMothers}
+              </Text>
+              <Text size="xs" c="dimmed" mt={6}>
+                {selectedBarangay || 'All Barangays'} • {selectedYear || 'All Years'}
+              </Text>
+            </div>
+            <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+              <Users size={20} />
+            </ThemeIcon>
+          </Group>
+        </Paper>
+
+        <Paper
+          withBorder
+          radius="md"
+          p="md"
+          style={{ borderLeft: `4px solid ${COLORS.red}`, cursor: 'pointer' }}
+          onClick={() => showRecords('High Risk — High Risk', pr.highRisk?.records?.['High Risk'] || [])}
+        >
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                High Risk Rate
+              </Text>
+              <Group align="baseline" gap={6} mt={4}>
+                <Text size="2rem" fw={800} lh={1.1} c="red">
+                  {pr.highRisk?.rate || 0}%
+                </Text>
+                <Text size="xs" c="dimmed" fw={600}>
+                  ({pr.highRisk?.highRiskCount || 0} cases)
+                </Text>
+              </Group>
+              <Progress value={pr.highRisk?.rate || 0} color="red" size="sm" radius="xl" mt={10} />
+            </div>
+            <ThemeIcon size="lg" radius="md" variant="light" color="red">
+              <AlertTriangle size={20} />
+            </ThemeIcon>
+          </Group>
+        </Paper>
+
+        <Paper
+          withBorder
+          radius="md"
+          p="md"
+          style={{ borderLeft: `4px solid ${COLORS.teal}`, cursor: 'pointer' }}
+          onClick={() => showRecords('8 ANC Completion — Completed', pr.ancCompletion?.records?.Completed || [])}
+        >
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                8 ANC Completion
+              </Text>
+              <Group align="baseline" gap={6} mt={4}>
+                <Text size="2rem" fw={800} lh={1.1} c="teal">
+                  {pr.ancCompletion?.rate || 0}%
+                </Text>
+                <Text size="xs" c="dimmed" fw={600}>
+                  ({pr.ancCompletion?.completed || 0}/{totalMothers})
+                </Text>
+              </Group>
+              <Progress value={pr.ancCompletion?.rate || 0} color="teal" size="sm" radius="xl" mt={10} />
+            </div>
+            <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+              <CheckCircle2 size={20} />
+            </ThemeIcon>
+          </Group>
+        </Paper>
+
+        <Paper
+          withBorder
+          radius="md"
+          p="md"
+          style={{ borderLeft: `4px solid ${COLORS.blue}`, cursor: 'pointer' }}
+          onClick={() => showRecords('4 PNC Completion — Completed', pr.postpartumCompletion?.records?.Completed || [])}
+        >
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                4 PNC Completion
+              </Text>
+              <Group align="baseline" gap={6} mt={4}>
+                <Text size="2rem" fw={800} lh={1.1} c="blue">
+                  {pr.postpartumCompletion?.rate || 0}%
+                </Text>
+                <Text size="xs" c="dimmed" fw={600}>
+                  ({pr.postpartumCompletion?.completed || 0}/{totalMothers})
+                </Text>
+              </Group>
+              <Progress value={pr.postpartumCompletion?.rate || 0} color="blue" size="sm" radius="xl" mt={10} />
+            </div>
+            <ThemeIcon size="lg" radius="md" variant="light" color="blue">
+              <Activity size={20} />
+            </ThemeIcon>
+          </Group>
+        </Paper>
+      </SimpleGrid>
 
       {/* ═══════ RECORD LIST MODAL ═══════ */}
       <Modal
@@ -399,295 +811,129 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
         )}
       </Modal>
 
-      {/* ════════════ SECTION 1: GENERAL DATA STATISTICS ════════════ */}
-      <Title order={4}>General Data Statistics</Title>
+      {/* ════════════ SECTION 1: PREGNANCY RELATED STATISTICS ════════════ */}
+      <Title order={4}>Pregnancy & Clinical Outcomes</Title>
       <Grid>
-        {/* ── Solo Parent ── */}
+        {/* ── Completion of 8 ANC (Radial Gauge) ── */}
         <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="Solo Parent" subtitle="Yes vs No" icon={<UserCheck size={16} />} onExport={() => handleExport('Solo Parent', gd.soloParent?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={soloParentData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.soloParent?.records, 'Solo Parent')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {soloParentData.map((entry, i) => (
-                    <Cell key={entry.name} fill={soloColors[i % soloColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <ChartPaper
+            title="Completion of 8 ANC"
+            subtitle="Target prenatal visits completion"
+            icon={<CheckCircle2 size={16} />}
+            color="teal"
+            onExport={() => handleExport('Completion of 8 ANC', pr.ancCompletion?.records)}
+          >
+            <CompletionGaugeChart
+              completed={pr.ancCompletion?.completed || 0}
+              notCompleted={pr.ancCompletion?.notCompleted || 0}
+              rate={pr.ancCompletion?.rate || 0}
+              accentColor={COLORS.teal}
+              onSliceClick={onPieClick(pr.ancCompletion?.records, '8 ANC Completion')}
+            />
           </ChartPaper>
         </Grid.Col>
 
-        {/* ── 4Ps Member ── */}
+        {/* ── Completed Postpartum Visit (4 PNC Radial Gauge) ── */}
         <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="4Ps Member" subtitle="Yes vs No" icon={<UserCheck size={16} />} onExport={() => handleExport('4Ps Member', gd.fourPs?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={fourPsData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.fourPs?.records, '4Ps Member')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {fourPsData.map((entry, i) => (
-                    <Cell key={entry.name} fill={fourPsColors[i % fourPsColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <ChartPaper
+            title="Completed Postpartum Visit"
+            subtitle="4 PNC contacts completion"
+            icon={<Activity size={16} />}
+            color="blue"
+            onExport={() => handleExport('Completed Postpartum Visit (4 PNC)', pr.postpartumCompletion?.records)}
+          >
+            <CompletionGaugeChart
+              completed={pr.postpartumCompletion?.completed || 0}
+              notCompleted={pr.postpartumCompletion?.notCompleted || 0}
+              rate={pr.postpartumCompletion?.rate || 0}
+              accentColor={COLORS.blue}
+              onSliceClick={onPieClick(pr.postpartumCompletion?.records, '4 PNC Completion')}
+            />
           </ChartPaper>
         </Grid.Col>
 
-        {/* ── PhilHealth ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="PhilHealth Member" subtitle="Hover on Member for type breakdown" icon={<Shield size={16} />} onExport={() => handleExport('PhilHealth Member', gd.philhealth?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={philhealthData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.philhealth?.records, 'PhilHealth')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {philhealthData.map((entry, i) => (
-                    <Cell key={entry.name} fill={phColors[i % phColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SubBreakdownTooltip breakdownMap={gd.philhealth?.byType} targetSliceName="Member" />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-
-        {/* ── SSS Member ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="SSS Member" subtitle="Member vs Not Member" icon={<Shield size={16} />} onExport={() => handleExport('SSS Member', gd.sss?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={sssData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.sss?.records, 'SSS')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {sssData.map((entry, i) => (
-                    <Cell key={entry.name} fill={sssColors[i % sssColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-
-        {/* ── GSIS Member ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="GSIS Member" subtitle="Member vs Not Member" icon={<Shield size={16} />} onExport={() => handleExport('GSIS Member', gd.gsis?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={gsisData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.gsis?.records, 'GSIS')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {gsisData.map((entry, i) => (
-                    <Cell key={entry.name} fill={gsisColors[i % gsisColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-
-        {/* ── Birth Registration Status ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="Birth Registration Status" subtitle="Registered vs Not Registered" icon={<PieChartIcon size={16} />} onExport={() => handleExport('Birth Registration Status', gd.birthRegistration?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={birthRegData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(gd.birthRegistration?.records, 'Birth Registration')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {birthRegData.map((entry, i) => (
-                    <Cell key={entry.name} fill={birthRegColors[i % birthRegColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-      </Grid>
-
-      {/* ════════════ SECTION 2: PREGNANCY RELATED STATISTICS ════════════ */}
-      <Title order={4}>Pregnancy Related Statistics</Title>
-      <Grid>
-        {/* ── Completion of 8 ANC ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="Completion of 8 ANC" subtitle="Completed vs Not Completed" icon={<PieChartIcon size={16} />} onExport={() => handleExport('Completion of 8 ANC', pr.ancCompletion?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={ancData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(pr.ancCompletion?.records, '8 ANC Completion')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {ancData.map((entry, i) => (
-                    <Cell key={entry.name} fill={PIE_COMPLETION[i % PIE_COMPLETION.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-
-        {/* ── Completed Postpartum Visit (4 PNC) ── */}
-        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
-          <ChartPaper title="Completed Postpartum Visit" subtitle="4 PNC — Completed vs Not Completed" icon={<PieChartIcon size={16} />} onExport={() => handleExport('Completed Postpartum Visit (4 PNC)', pr.postpartumCompletion?.records)}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={pncData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(pr.postpartumCompletion?.records, '4 PNC Completion')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pncData.map((entry, i) => (
-                    <Cell key={entry.name} fill={PIE_COMPLETION[i % PIE_COMPLETION.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartPaper>
-        </Grid.Col>
-
-        {/* ── High Risk Pregnancy Rate (pie chart) ── */}
+        {/* ── High Risk Pregnancy Rate (Donut chart) ── */}
         <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
           <ChartPaper
             title="High Risk Pregnancy Rate"
-            subtitle={`${pr.highRisk?.rate || 0}% classified as high risk`}
+            subtitle={`${pr.highRisk?.highRiskCount || 0} of ${totalMothers} classified as high risk`}
             icon={<HeartPulse size={16} />}
+            color="red"
             onExport={() => handleExport('High Risk Pregnancy Rate', pr.highRisk?.records)}
           >
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={highRiskPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={renderPercentLabel}
-                  onClick={onPieClick(pr.highRisk?.records, 'High Risk')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Cell fill={COLORS.red} />
-                  <Cell fill={COLORS.green} />
-                </Pie>
-                <Tooltip content={<SimplePieTooltip />} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <DonutChartWithCenter
+              data={highRiskPieData}
+              colors={[COLORS.red, COLORS.green]}
+              onSliceClick={onPieClick(pr.highRisk?.records, 'High Risk')}
+              centerValue={`${pr.highRisk?.rate || 0}%`}
+              centerLabel="High Risk"
+              centerColor={COLORS.red}
+            />
           </ChartPaper>
         </Grid.Col>
 
-        {/* ── Reasons of High Risk Pregnancy (bar graph) ── */}
+        {/* ── Reasons of High Risk Pregnancy (Horizontal Ranked Bar Chart) ── */}
         <Grid.Col span={{ base: 12, lg: 8 }}>
-          <ChartPaper title="Reasons of High Risk Pregnancy" subtitle="Click a bar to view records" icon={<BarChart3 size={16} />} onExport={() => handleBarExport('Reasons of High Risk Pregnancy', riskReasons)}>
+          <ChartPaper
+            title="Reasons of High Risk Pregnancy"
+            subtitle="Ranked by number of cases — click any bar to view records"
+            icon={<BarChart3 size={16} />}
+            color="red"
+            height={Math.max(310, riskReasons.length * 42 + 60)}
+            onExport={() => handleBarExport('Reasons of High Risk Pregnancy', riskReasons)}
+          >
             {riskReasons.length === 0 ? (
               <Group justify="center" align="center" h="100%">
                 <Text c="dimmed" size="sm">No high risk cases recorded yet.</Text>
               </Group>
             ) : (
               <ResponsiveContainer>
-                <BarChart data={riskReasons}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="reason" hide />
-                  <YAxis allowDecimals={false} />
+                <BarChart
+                  data={riskReasons}
+                  layout="vertical"
+                  margin={{ top: 8, right: 38, left: 12, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="reason"
+                    width={175}
+                    tick={{ fontSize: 12, fontWeight: 600, fill: '#343a40' }}
+                  />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const d = payload[0].payload;
                       return (
                         <div style={tooltipStyle()}>
-                          <Text size="sm" fw={600} mb={2}>{d.reason}</Text>
+                          <Text size="sm" fw={700} mb={2}>{d.reason}</Text>
                           <Text size="sm">{d.count} case{d.count !== 1 ? 's' : ''}</Text>
                           <Text size="xs" c="dimmed" mt={6} fs="italic">Click to view records</Text>
                         </div>
                       );
                     }}
                   />
-                  <Legend />
                   <Bar
                     dataKey="count"
                     name="Cases"
-                    fill={COLORS.red}
-                    radius={[6, 6, 0, 0]}
+                    radius={[0, 6, 6, 0]}
+                    barSize={24}
                     onClick={onBarClick('High Risk Reason')}
                     style={{ cursor: 'pointer' }}
-                  />
+                  >
+                    {riskReasons.map((entry, idx) => (
+                      <Cell
+                        key={entry.reason}
+                        fill={RISK_BAR_SHADES[Math.min(idx, RISK_BAR_SHADES.length - 1)]}
+                      />
+                    ))}
+                    <LabelList
+                      dataKey="count"
+                      position="right"
+                      style={{ fontSize: 12, fontWeight: 700, fill: '#c92a2a' }}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -696,31 +942,209 @@ export default function StatisticsView({ isAdmin, userId, onEditRecord }) {
 
         {/* ── Teenage Pregnancy Cases ── */}
         <Grid.Col span={{ base: 12, lg: 4 }}>
-          <ChartPaper title="Teenage Pregnancy Cases" subtitle="Mothers aged 10–19" icon={<Baby size={16} />} onExport={handleTeenageExport}>
+          <ChartPaper
+            title="Teenage Pregnancy Cases"
+            subtitle="Mothers aged 10–19 years"
+            icon={<Baby size={16} />}
+            color="orange"
+            onExport={handleTeenageExport}
+          >
             <Stack
               align="center"
               justify="center"
               h="100%"
-              gap="md"
+              gap="sm"
               style={{ cursor: 'pointer' }}
               onClick={() => showRecords('Teenage Pregnancy Cases', pr.teenagePregnancy?.records || [])}
             >
-              <div style={{ textAlign: 'center' }}>
-                <Text size="4rem" fw={800} c="orange" lh={1}>{teenageCount}</Text>
-                <Text size="md" c="dimmed" mt={4}>case{teenageCount !== 1 ? 's' : ''}</Text>
-              </div>
-              <Paper withBorder radius="md" p="sm" bg="orange.0" w="100%" maw={220}>
+              <RingProgress
+                size={150}
+                thickness={14}
+                roundCaps
+                sections={[{ value: teenageRate, color: 'orange' }]}
+                label={
+                  <div style={{ textAlign: 'center' }}>
+                    <Text size="2.2rem" fw={800} c="orange" lh={1}>
+                      {teenageCount}
+                    </Text>
+                    <Text size="xs" c="dimmed" fw={600} mt={2}>
+                      case{teenageCount !== 1 ? 's' : ''}
+                    </Text>
+                  </div>
+                }
+              />
+              <Paper withBorder radius="md" p="sm" bg="orange.0" w="100%" maw={230}>
                 <Group justify="space-between">
-                  <Text size="sm" c="dimmed">Rate</Text>
-                  <Text size="sm" fw={700} c="orange">{teenageRate}%</Text>
+                  <Text size="xs" c="dimmed" fw={600}>Share of Mothers</Text>
+                  <Text size="sm" fw={800} c="orange">{teenageRate}%</Text>
                 </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">Out of</Text>
-                  <Text size="sm" fw={600}>{teenageTotal} total</Text>
+                <Group justify="space-between" mt={4}>
+                  <Text size="xs" c="dimmed" fw={600}>Total Evaluated</Text>
+                  <Text size="xs" fw={700}>{teenageTotal} mothers</Text>
                 </Group>
               </Paper>
               <Text size="xs" c="dimmed" fs="italic">Click to view records</Text>
             </Stack>
+          </ChartPaper>
+        </Grid.Col>
+      </Grid>
+
+      {/* ════════════ SECTION 2: GENERAL DATA & DEMOGRAPHICS ════════════ */}
+      <Title order={4} mt="xs">Demographics & Benefits Coverage</Title>
+
+      {/* ── Quick Comparison Bar Card for Benefits & Social Indicators ── */}
+      <Paper withBorder radius="md" p="md">
+        <Group justify="space-between" mb="sm">
+          <div>
+            <Text fw={700} size="sm">Social & Government Benefits Snapshot</Text>
+            <Text size="xs" c="dimmed">Click any bar to view mothers in that group</Text>
+          </div>
+          <ThemeIcon variant="light" color="teal" radius="md">
+            <Shield size={16} />
+          </ThemeIcon>
+        </Group>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="md">
+          {coverageOverview.map((item) => (
+            <Box
+              key={item.label}
+              p="xs"
+              style={{
+                borderRadius: 8,
+                border: '1px solid #e9ecef',
+                cursor: 'pointer',
+              }}
+              onClick={item.onClick}
+            >
+              <Group justify="space-between" mb={4} wrap="nowrap">
+                <Text size="xs" fw={600} lineClamp={1} title={item.label}>
+                  {item.label}
+                </Text>
+                <Badge size="sm" variant="light" color={item.color}>
+                  {item.pct}%
+                </Badge>
+              </Group>
+              <Progress value={item.pct} color={item.color} size="md" radius="xl" />
+              <Text size="xs" c="dimmed" mt={4}>
+                {item.count} of {totalMothers} mothers
+              </Text>
+            </Box>
+          ))}
+        </SimpleGrid>
+      </Paper>
+
+      <Grid>
+        {/* ── PhilHealth ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="PhilHealth Status"
+            subtitle="Hover on Member for type breakdown"
+            icon={<Shield size={16} />}
+            onExport={() => handleExport('PhilHealth Member', gd.philhealth?.records)}
+          >
+            <DonutChartWithCenter
+              data={philhealthData}
+              colors={phColors}
+              onSliceClick={onPieClick(gd.philhealth?.records, 'PhilHealth')}
+              tooltipContent={<SubBreakdownTooltip breakdownMap={gd.philhealth?.byType} targetSliceName="Member" />}
+              centerValue={`${pctOf(phCoveredCount, totalMothers)}%`}
+              centerLabel="Covered"
+              centerColor={COLORS.green}
+            />
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── 4Ps Member ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="4Ps Member"
+            subtitle="Pantawid Pamilya beneficiary status"
+            icon={<UserCheck size={16} />}
+            onExport={() => handleExport('4Ps Member', gd.fourPs?.records)}
+          >
+            <DonutChartWithCenter
+              data={fourPsData}
+              colors={fourPsColors}
+              onSliceClick={onPieClick(gd.fourPs?.records, '4Ps Member')}
+              centerValue={`${pctOf(gd.fourPs?.yes || 0, totalMothers)}%`}
+              centerLabel="4Ps Yes"
+              centerColor={COLORS.green}
+            />
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── Solo Parent ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="Solo Parent"
+            subtitle="Solo parent status distribution"
+            icon={<UserCheck size={16} />}
+            onExport={() => handleExport('Solo Parent', gd.soloParent?.records)}
+          >
+            <DonutChartWithCenter
+              data={soloParentData}
+              colors={soloColors}
+              onSliceClick={onPieClick(gd.soloParent?.records, 'Solo Parent')}
+              centerValue={`${pctOf(gd.soloParent?.yes || 0, totalMothers)}%`}
+              centerLabel="Solo Parent"
+              centerColor={COLORS.green}
+            />
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── SSS Member ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="SSS Member"
+            subtitle="Social Security System membership"
+            icon={<Shield size={16} />}
+            onExport={() => handleExport('SSS Member', gd.sss?.records)}
+          >
+            <DonutChartWithCenter
+              data={sssData}
+              colors={sssColors}
+              onSliceClick={onPieClick(gd.sss?.records, 'SSS')}
+              centerValue={`${pctOf(gd.sss?.member || 0, totalMothers)}%`}
+              centerLabel="Member"
+              centerColor={COLORS.green}
+            />
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── GSIS Member ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="GSIS Member"
+            subtitle="Government Service Insurance membership"
+            icon={<Shield size={16} />}
+            onExport={() => handleExport('GSIS Member', gd.gsis?.records)}
+          >
+            <DonutChartWithCenter
+              data={gsisData}
+              colors={gsisColors}
+              onSliceClick={onPieClick(gd.gsis?.records, 'GSIS')}
+              centerValue={`${pctOf(gd.gsis?.member || 0, totalMothers)}%`}
+              centerLabel="Member"
+              centerColor={COLORS.green}
+            />
+          </ChartPaper>
+        </Grid.Col>
+
+        {/* ── Birth Registration Status ── */}
+        <Grid.Col span={{ base: 12, sm: 6, lg: 4 }}>
+          <ChartPaper
+            title="Birth Registration Status"
+            subtitle="Newborn civil registration status"
+            icon={<PieChartIcon size={16} />}
+            onExport={() => handleExport('Birth Registration Status', gd.birthRegistration?.records)}
+          >
+            <DonutChartWithCenter
+              data={birthRegData}
+              colors={birthRegColors}
+              onSliceClick={onPieClick(gd.birthRegistration?.records, 'Birth Registration')}
+              centerValue={`${pctOf(gd.birthRegistration?.registered || 0, totalMothers)}%`}
+              centerLabel="Registered"
+              centerColor={COLORS.green}
+            />
           </ChartPaper>
         </Grid.Col>
       </Grid>

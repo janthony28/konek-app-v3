@@ -299,11 +299,13 @@ export function buildMaternalStatistics(records) {
       ancCompletion: {
         completed: anc8Completed,
         notCompleted: Math.max(totalRecords - anc8Completed, 0),
+        rate: percent(anc8Completed, totalRecords),
         records: mapToObj(ancEntries),
       },
       postpartumCompletion: {
         completed: pnc4Completed,
         notCompleted: Math.max(totalRecords - pnc4Completed, 0),
+        rate: percent(pnc4Completed, totalRecords),
         records: mapToObj(pncEntries),
       },
       highRisk: {
@@ -330,5 +332,9 @@ export async function fetchStatisticsData({ isAdmin = false, userId } = {}) {
 
   const { data, error } = await query;
   if (error) throw error;
-  return buildMaternalStatistics(data || []);
+  const rawRecords = data || [];
+  return {
+    ...buildMaternalStatistics(rawRecords),
+    rawRecords,
+  };
 }
